@@ -7,13 +7,14 @@ dotenv.config();
 const connectDB = require("./config/db");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+console.log("✅ Loaded MONGODB_URI:", process.env.MONGODB_URI); // 👈 add this line
 
 app.use(cors());
 app.use(express.json());
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 // Connect to DB
-connectDB();
+
 app.use(express.urlencoded({ extended: true }));
 
 
@@ -27,6 +28,10 @@ app.get('/', (req, res) => {
   res.send('Smart Parking App API is running');
 });
 
+
+const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
-  console.log('server is running on PORT:' + PORT);
+  console.log(`server is running on PORT:${PORT}`);
+  connectDB(); // ✅ now it's a proper function
 });
