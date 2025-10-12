@@ -1,4 +1,29 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Smooth theme transitions */
+:root {
+  --page-bg: #f8fafc; /* light bg */
+  --card-bg: #ffffff;
+  --text: #0f172a;
+}
+
+/* dark variables (optional fallback for non-tailwind parts) */
+html.dark {
+  --page-bg: #071029;
+  --card-bg: #0b1220;
+  --text: #e6f0ff;
+}
+
+html, body {
+  background-color: var(--page-bg);
+  color: var(--text);
+  transition: background-color .25s ease, color .25s ease;
+}
+
+/* small utility for subtle card glass effect */
+.card {
+  transition: box-shadow .18s ease, transform .12s ease;
+}
+.card:hover { transform: translateY(-3px); }

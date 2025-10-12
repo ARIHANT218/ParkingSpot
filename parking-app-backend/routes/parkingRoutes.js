@@ -1,12 +1,20 @@
 const express = require('express');
 const router = express.Router();
-const parkingController = require('../controllers/parkingController');
-const authMiddleware = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware');
+const { 
+  getParkingLots, 
+  bookParking, 
+  getMyBookings, 
+  addReview,
+  cancelBooking,
+  editBooking
+} = require('../controllers/parkingController');
 
-router.get('/', parkingController.getAllParkingLots);
-router.get('/:id', parkingController.getParkingLotById);
-router.post('/', authMiddleware, parkingController.createParkingLot); // admin only
-router.patch('/:id', authMiddleware, parkingController.updateParkingLot); // admin only
-router.delete('/:id', authMiddleware, parkingController.deleteParkingLot); // admin only
+router.get('/', getParkingLots);
+router.post('/book/:id', protect, bookParking);
+router.get('/my-bookings', protect, getMyBookings);
+router.put('/edit/:id', protect, editBooking);       // Edit booking
+router.delete('/cancel/:id', protect, cancelBooking); // Cancel booking
+router.post('/review/:id', protect, addReview);
 
 module.exports = router;

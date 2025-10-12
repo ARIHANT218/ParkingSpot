@@ -1,28 +1,32 @@
+// routes/adminRoutes.js
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const Admin = require('../models/user'); // if you use the same User model
+const { protect, admin } = require('../middleware/authMiddleware');
+const {
+  createParkingLot,
+  updateParkingLot,
+  deleteParkingLot,
+  getAllBookings,
+  getAllParkingLots,
+  deleteBooking
+} = require('../controllers/adminController');
 
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
+// Create a parking lot
+router.post('/parking-lot', protect, admin, createParkingLot);
 
-  try {
-    const admin = await Admin.findOne({ email, role: 'admin' });
-    if (!admin) return res.status(400).json({ message: "Invalid credentials" });
+// Get all parking lots (admin view)
+router.get('/parking-lots', protect, admin, getAllParkingLots);
 
-    const isMatch = await bcrypt.compare(password, admin.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+// Update parking lot
+router.put('/parking-lot/:id', protect, admin, updateParkingLot);
 
-    const token = jwt.sign({ id: admin._id, role: admin.role }, process.env.JWT_SECRET, {
-      expiresIn: '7d'
-    });
+// Delete parking lot
+router.delete('/parking-lot/:id', protect, admin, deleteParkingLot);
 
-    res.json({ token, admin });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-});
+// Get all bookings
+router.get('/bookings', protect, admin, getAllBookings);
+
+// Delete a booking (admin)
+router.delete('/bookings/:id', protect, admin, deleteBooking);
 
 module.exports = router;
