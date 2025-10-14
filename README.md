@@ -138,27 +138,12 @@ Server will run at **[http://localhost:5000](http://localhost:5000)**
 * Payment gateway integration (Stripe / Razorpay / Paytm)
 * Live map tracking with Google Maps API
 * Dynamic pricing system based on demand
-* Admin dashboard with analytics and revenue tracking
-
----
-
-## 💡 Inspiration
-
-Inspired by leading parking apps like **SpotHero**, **ParkMobile**, and **Get My Parking**, this project is designed to bring **smart city-level parking solutions** to local communities.
-
----
-
-git commands 
-git add .
-git commit -m ""
-git push
-
+* Admin dashboard with analytics and revenue tracker.
 ---
 
 ## 🧑‍💻 Author
 
 **Arihant Jain**
-Full-Stack Developer | AI & ML Enthusiast
+Full-Stack Developer | AI & ML Enthusiasts 
 
----
 
