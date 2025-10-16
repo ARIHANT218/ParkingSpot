@@ -11,6 +11,21 @@ The goal of this project is to make parking **easier, faster, and smarter** by c
 Admins can manage parking spaces, monitor availability, and view bookings.
 
 ---
+ IMG ..
+ ADMIN DASHBOARD ..
+ ![WhatsApp Image 2025-10-16 at 20 34 55_2e29f31d](https://github.com/user-attachments/assets/7fee8506-3c1f-47d0-9e1b-2ec7ba1ce938)
+
+<img width="982" height="390" alt="image" src="https://github.com/user-attachments/assets/1e909f45-b213-4ab1-b47e-5017bd68bf4f" />
+
+
+-------
+
+USER DASHBOARD ..
+<img width="836" height="400" alt="image" src="https://github.com/user-attachments/assets/f487cc61-87cb-4732-8fd0-d7852b4e4005" />
+<img width="848" height="398" alt="image" src="https://github.com/user-attachments/assets/ccc49ac5-ec21-45bd-9ff5-e65a9fa93f04" />
+
+
+
 
 ## 🧩 Features
 
@@ -145,5 +160,6 @@ Server will run at **[http://localhost:5000](http://localhost:5000)**
 
 **Arihant Jain**
 Full-Stack Developer | AI & ML Enthusiasts 
+
 
 
