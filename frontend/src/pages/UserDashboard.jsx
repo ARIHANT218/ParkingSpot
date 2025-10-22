@@ -19,6 +19,7 @@ export default function UserDashboard() {
     fetchParking();
   }, [city]);
 
+  
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Available Parking Lots</h1>
@@ -29,9 +30,12 @@ export default function UserDashboard() {
         onChange={(e) => setCity(e.target.value)}
         className="border p-2 rounded mb-4"
       />
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {parkingLots.map(lot => <ParkingCard key={lot._id} lot={lot} />)}
       </div>
     </div>
   );
 }
+
+

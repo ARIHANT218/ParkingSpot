@@ -2,6 +2,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import ThemeToggle from './ThemeToggle';
 
+
 export default function Navbar() {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
@@ -21,10 +22,15 @@ export default function Navbar() {
           <Link to="/" className="hidden md:inline text-sm hover:underline">Explore</Link>
           {token && role === 'user' && (
             <Link to="/my-bookings" className="text-sm hover:underline">My Bookings</Link>
+
           )}
           {token && role === 'admin' && (
             <Link to="/admin" className="text-sm hover:underline">Admin Dashboard</Link>
+
           )}
+                {/* Map */}
+          <Link to="/map" className="text-sm hover:underline">Map</Link>
+           
         </div>
 
         <div className="flex items-center gap-3">

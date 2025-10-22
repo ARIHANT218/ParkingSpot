@@ -7,6 +7,10 @@ import ParkingDetails from './pages/ParkingDetails';
 import UserBookings from './pages/UserBookings';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
+import MapLoader from './components/MapLoader';
+import MapView from './pages/MapView';
+
+
 
 function App() {
   return (
@@ -18,19 +22,30 @@ function App() {
             <UserDashboard />
           </ProtectedRoute>
         }/>
+                
+        <Route path="/map" element={
+          <MapLoader>
+            <MapView />
+          </MapLoader>
+        } />
+
         <Route path="/parking/:id" element={
           <ProtectedRoute>
             <ParkingDetails />
+
           </ProtectedRoute>
         }/>
         <Route path="/my-bookings" element={
           <ProtectedRoute>
             <UserBookings />
+
           </ProtectedRoute>
         }/>
         <Route path="/admin" element={
           <ProtectedRoute admin={true}>
             <AdminDashboard />
+           
+            
           </ProtectedRoute>
         }/>
         <Route path="/login" element={<Login />} />

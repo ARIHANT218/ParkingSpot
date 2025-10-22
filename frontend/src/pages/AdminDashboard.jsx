@@ -1,6 +1,7 @@
 // src/pages/AdminDashboard.jsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import axios from '../api/axios';
+import AdminChatsList from '../components/AdminChatList';
 
 /**
  * Admin Dashboard
@@ -10,19 +11,29 @@ import axios from '../api/axios';
  * - Delete parking lot (DELETE /admin/parking-lot/:id)
  * - List bookings (GET /admin/bookings)
  * - Delete booking (DELETE /admin/bookings/:id) - backend restores slot
+ *
+ * IMPORTANT:
+ * - This component calls useJsApiLoader({ libraries: ['places'] }).
+ *   Ensure you DO NOT call useJsApiLoader elsewhere with different options,
+ *   or create a single MapLoader wrapper and use it across the app.
  */
 
+const MAP_LIBRARIES = ['places'];
+
 export default function AdminDashboard() {
+  // data
   const [parkingLots, setParkingLots] = useState([]);
   const [bookings, setBookings] = useState([]);
 
-  // add form
+  // add form fields
   const [name, setName] = useState('');
-  const [location, setLocation] = useState('');
+  const [locationText, setLocationText] = useState('');
   const [city, setCity] = useState('');
   const [price, setPrice] = useState('');
   const [capacity, setCapacity] = useState('');
-  const [amenities, setAmenities] = useState(''); // comma separated
+  const [amenities, setAmenities] = useState(''); // comma-separated
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
 
   // UI states
   const [loadingLots, setLoadingLots] = useState(false);
@@ -73,28 +84,36 @@ export default function AdminDashboard() {
   const handleAdd = async () => {
     setError('');
     setSuccessMsg('');
-    if (!name || !location || !city || !price || !capacity) {
-      setError('Please fill required fields: name, location, city, price, capacity.');
+    if (!name || !city || !price || !capacity) {
+      setError('Please fill required fields: name, city, price, capacity.');
       return;
     }
 
     try {
       const payload = {
-        name,
-        location,
-        city,
+        name: name.trim(),
+        location: locationText?.trim() || '',
+        city: city.trim(),
+        latitude: latitude !== '' ? Number(latitude) : undefined,
+        longitude: longitude !== '' ? Number(longitude) : undefined,
         pricePerHour: Number(price),
         capacity: Number(capacity),
         availableSlots: Number(capacity),
-        amenities: amenities
-          ? amenities.split(',').map(a => a.trim()).filter(Boolean)
-          : []
+        amenities: amenities ? amenities.split(',').map(a => a.trim()).filter(Boolean) : [],
       };
 
       await axios.post('/admin/parking-lot', payload);
       setSuccessMsg('Parking lot added successfully.');
       // reset form
-      setName(''); setLocation(''); setCity(''); setPrice(''); setCapacity(''); setAmenities('');
+      setName('');
+      setLocationText('');
+      setCity('');
+      setPrice('');
+      setCapacity('');
+      setAmenities('');
+      setLatitude('');
+      setLongitude('');
+      // refresh lists
       await fetchParkingLots();
     } catch (err) {
       console.error('add parking error', err);
@@ -118,23 +137,24 @@ export default function AdminDashboard() {
     }
   };
 
-  // Start editing
+  // Start editing a lot
   const startEdit = (lot) => {
     setEditingId(lot._id);
     setEditValues({
       name: lot.name || '',
-      location: lot.location || '',
+      locationText: lot.location || '',
       city: lot.city || '',
       pricePerHour: lot.pricePerHour ?? '',
       capacity: lot.capacity ?? '',
       availableSlots: lot.availableSlots ?? '',
-      amenities: (lot.amenities || []).join(', ')
+      amenities: (lot.amenities || []).join(', '),
+      latitude: lot.latitude ?? '',
+      longitude: lot.longitude ?? '',
     });
     setError('');
     setSuccessMsg('');
   };
 
-  // Cancel editing
   const cancelEdit = () => {
     setEditingId(null);
     setEditValues({});
@@ -147,14 +167,14 @@ export default function AdminDashboard() {
     try {
       const payload = {
         name: editValues.name,
-        location: editValues.location,
+        location: editValues.locationText,
         city: editValues.city,
+        latitude: editValues.latitude !== '' ? Number(editValues.latitude) : undefined,
+        longitude: editValues.longitude !== '' ? Number(editValues.longitude) : undefined,
         pricePerHour: Number(editValues.pricePerHour),
         capacity: Number(editValues.capacity),
         availableSlots: Number(editValues.availableSlots),
-        amenities: editValues.amenities
-          ? editValues.amenities.split(',').map(a => a.trim()).filter(Boolean)
-          : []
+        amenities: editValues.amenities ? editValues.amenities.split(',').map(a => a.trim()).filter(Boolean) : [],
       };
       await axios.put(`/admin/parking-lot/${id}`, payload);
       setSuccessMsg('Parking lot updated.');
@@ -183,6 +203,7 @@ export default function AdminDashboard() {
     }
   };
 
+  // Render
   return (
     <div className="p-6 min-h-screen bg-sky-50 dark:bg-sky-900 transition">
       <div className="max-w-7xl mx-auto">
@@ -200,29 +221,82 @@ export default function AdminDashboard() {
           <div className="card bg-white dark:bg-sky-800 text-slate-900 dark:text-slate-100 border p-4 rounded-lg shadow">
             <h2 className="font-semibold mb-3">Add Parking Lot</h2>
 
-            <input className="border p-2 rounded w-full mb-2 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
-                   placeholder="Name" value={name} onChange={e => setName(e.target.value)} />
+            <input
+              className="border p-2 rounded w-full mb-2 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
+              placeholder="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
 
-            <input className="border p-2 rounded w-full mb-2 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
-                   placeholder="Location" value={location} onChange={e => setLocation(e.target.value)} />
+            <input
+              className="border p-2 rounded w-full mb-2 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
+              placeholder="City"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+            />
 
-            <input className="border p-2 rounded w-full mb-2 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
-                   placeholder="City" value={city} onChange={e => setCity(e.target.value)} />
+            {/* Plain location input (removed Google Maps Autocomplete) */}
+            <input
+              placeholder="Location / Address"
+              value={locationText}
+              onChange={(e) => setLocationText(e.target.value)}
+              className="border p-2 rounded w-full mb-2 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
+            />
 
-            <div className="flex gap-2">
-              <input className="border p-2 rounded w-1/2 mb-2 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
-                     placeholder="Price per hour" value={price} onChange={e => setPrice(e.target.value)} />
-              <input className="border p-2 rounded w-1/2 mb-2 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
-                     placeholder="Capacity" value={capacity} onChange={e => setCapacity(e.target.value)} />
+            <div className="flex gap-2 mb-2">
+              <input
+                className="border rounded mb-2 p-2 bg-white text-slate-900 dark:text-slate-100 dark:bg-sky-700"
+                placeholder="Latitude (optional)"
+                value={latitude}
+                onChange={(e) => setLatitude(e.target.value)}
+              />
+              <input
+                placeholder="Longitude (optional)"
+                value={longitude}
+                onChange={(e) => setLongitude(e.target.value)}
+                className="border p-2 rounded w-1/2 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
+              />
             </div>
 
-            <input className="border p-2 rounded w-full mb-3 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
-                   placeholder="Amenities (comma separated)" value={amenities} onChange={e => setAmenities(e.target.value)} />
+            <div className="flex gap-2">
+              <input
+                className="border p-2 rounded w-1/2 mb-2 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
+                placeholder="Price per hour"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+              />
+              <input
+                className="border p-2 rounded w-1/2 mb-2 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
+                placeholder="Capacity"
+                value={capacity}
+                onChange={(e) => setCapacity(e.target.value)}
+              />
+            </div>
+
+            <input
+              className="border p-2 rounded w-full mb-3 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
+              placeholder="Amenities (comma separated)"
+              value={amenities}
+              onChange={(e) => setAmenities(e.target.value)}
+            />
 
             <div className="flex items-center gap-3">
               <button onClick={handleAdd} className="bg-sky-600 text-white px-4 py-2 rounded hover:bg-sky-700 transition">Add Parking</button>
-              <button onClick={() => { setName(''); setLocation(''); setCity(''); setPrice(''); setCapacity(''); setAmenities(''); }}
-                      className="bg-slate-100 dark:bg-sky-700 text-slate-900 dark:text-slate-100 px-3 py-2 rounded">Clear</button>
+              <button
+                onClick={() => {
+                  setName('');
+                  setLocationText('');
+                  setCity('');
+                  setPrice('');
+                  setCapacity('');
+                  setAmenities('');
+                  setLatitude('');
+                  setLongitude('');
+                }}
+                className="bg-slate-100 dark:bg-sky-700 text-slate-900 dark:text-slate-100 px-3 py-2 rounded"
+              >
+                Clear
+              </button>
             </div>
           </div>
 
@@ -234,35 +308,73 @@ export default function AdminDashboard() {
             {parkingLots.length === 0 && !loadingLots && <p className="text-sm text-slate-600 dark:text-slate-300">No parking lots found.</p>}
 
             <div className="space-y-3">
-              {parkingLots.map(lot => (
+              {parkingLots.map((lot) => (
                 <div key={lot._id} className="p-3 border rounded-lg flex flex-col md:flex-row md:justify-between md:items-start bg-white dark:bg-sky-800">
                   <div className="w-full md:w-3/4">
                     {editingId === lot._id ? (
                       <>
-                        <input className="border p-1 rounded w-full mb-1 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
-                               value={editValues.name} onChange={e => setEditValues(v => ({ ...v, name: e.target.value }))} />
-                        <input className="border p-1 rounded w-full mb-1 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
-                               value={editValues.location} onChange={e => setEditValues(v => ({ ...v, location: e.target.value }))} />
-                        <input className="border p-1 rounded w-full mb-1 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
-                               value={editValues.city} onChange={e => setEditValues(v => ({ ...v, city: e.target.value }))} />
-
+                        <input
+                          className="border p-1 rounded w-full mb-1 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
+                          value={editValues.name}
+                          onChange={(e) => setEditValues((v) => ({ ...v, name: e.target.value }))}
+                        />
+                        <input
+                          className="border p-1 rounded w-full mb-1 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
+                          value={editValues.locationText}
+                          onChange={(e) => setEditValues((v) => ({ ...v, locationText: e.target.value }))}
+                        />
+                        <input
+                          className="border p-1 rounded w-full mb-1 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
+                          value={editValues.city}
+                          onChange={(e) => setEditValues((v) => ({ ...v, city: e.target.value }))}
+                        />
                         <div className="flex gap-2">
-                          <input className="border p-1 rounded w-1/2 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
-                                 value={editValues.pricePerHour} onChange={e => setEditValues(v => ({ ...v, pricePerHour: e.target.value }))} />
-                          <input className="border p-1 rounded w-1/2 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
-                                 value={editValues.capacity} onChange={e => setEditValues(v => ({ ...v, capacity: e.target.value }))} />
+                          <input
+                            className="border p-1 rounded w-1/2 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
+                            value={editValues.pricePerHour}
+                            onChange={(e) => setEditValues((v) => ({ ...v, pricePerHour: e.target.value }))}
+                          />
+                          <input
+                            className="border p-1 rounded w-1/2 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
+                            value={editValues.capacity}
+                            onChange={(e) => setEditValues((v) => ({ ...v, capacity: e.target.value }))}
+                          />
                         </div>
 
-                        <input className="border p-1 rounded w-full mt-1 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
-                               value={editValues.availableSlots} onChange={e => setEditValues(v => ({ ...v, availableSlots: e.target.value }))} />
-                        <input className="border p-1 rounded w-full mt-1 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
-                               value={editValues.amenities} onChange={e => setEditValues(v => ({ ...v, amenities: e.target.value }))} />
+                        <div className="flex gap-2 mt-1">
+                          <input
+                            className="border p-1 rounded w-1/2 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
+                            value={editValues.latitude}
+                            onChange={(e) => setEditValues((v) => ({ ...v, latitude: e.target.value }))}
+                            placeholder="Latitude"
+                          />
+                          <input
+                            className="border p-1 rounded w-1/2 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
+                            value={editValues.longitude}
+                            onChange={(e) => setEditValues((v) => ({ ...v, longitude: e.target.value }))}
+                            placeholder="Longitude"
+                          />
+                        </div>
+
+                        <input
+                          className="border p-1 rounded w-full mt-1 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
+                          value={editValues.availableSlots}
+                          onChange={(e) => setEditValues((v) => ({ ...v, availableSlots: e.target.value }))}
+                        />
+                        <input
+                          className="border p-1 rounded w-full mt-1 bg-white dark:bg-sky-700 text-slate-900 dark:text-slate-100"
+                          value={editValues.amenities}
+                          onChange={(e) => setEditValues((v) => ({ ...v, amenities: e.target.value }))}
+                        />
                       </>
                     ) : (
                       <>
                         <div className="font-semibold text-slate-900 dark:text-slate-100">{lot.name}</div>
                         <div className="text-sm text-slate-600 dark:text-slate-300">{lot.city} • {lot.location}</div>
-                        <div className="text-sm mt-1">Price/hr: <span className="font-semibold">₹{lot.pricePerHour}</span> • Slots: <span className="font-semibold">{lot.availableSlots}/{lot.capacity}</span></div>
+                        <div className="text-sm mt-1">
+                          Price/hr: <span className="font-semibold">₹{lot.pricePerHour}</span> • Slots:{' '}
+                          <span className="font-semibold">{lot.availableSlots}/{lot.capacity}</span>
+                        </div>
                         <div className="text-sm mt-1">Amenities: {(lot.amenities || []).join(', ')}</div>
                       </>
                     )}
@@ -294,7 +406,7 @@ export default function AdminDashboard() {
           {bookings.length === 0 && !loadingBookings && <p className="text-sm text-slate-600 dark:text-slate-300">No bookings found.</p>}
 
           <div className="space-y-3">
-            {bookings.map(b => (
+            {bookings.map((b) => (
               <div key={b._id} className="p-3 border rounded-lg flex flex-col md:flex-row md:justify-between md:items-start bg-white dark:bg-sky-800">
                 <div>
                   <div className="font-semibold">{b.parkingLot?.name || '—'}</div>
@@ -309,6 +421,9 @@ export default function AdminDashboard() {
             ))}
           </div>
         </div>
+
+
+      <AdminChatsList token={localStorage.getItem('token')} />
 
       </div>
     </div>

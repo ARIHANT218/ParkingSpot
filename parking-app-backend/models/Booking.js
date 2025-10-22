@@ -5,6 +5,7 @@ const bookingSchema = new mongoose.Schema({
   parkingLot: { type: mongoose.Schema.Types.ObjectId, ref: 'ParkingLot', required: true },
   startTime: { type: Date, required: true },
   endTime: { type: Date, required: true },
+  status: { type: String, enum: ['pending', 'confirmed', 'cancelled', 'completed'], default: 'pending' },
   qrCode: { type: String }
 }, { timestamps: true });
 
