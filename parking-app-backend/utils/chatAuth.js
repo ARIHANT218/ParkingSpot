@@ -2,7 +2,7 @@ const Booking = require('../models/Booking');
 
 const Allowed_Statuses = ['confirmed'];
 
-async function canAcessChat(userId, bookingId) {
+async function canAcessChat(user, bookingId) {
   const booking = await Booking.findById(bookingId);
   if(!booking){
     return {ok: false, message: 'Booking not found'};

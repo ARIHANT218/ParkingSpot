@@ -66,6 +66,7 @@ export default function AdminDashboard() {
     setLoadingBookings(true);
     try {
       const res = await axios.get('/admin/bookings');
+      console.log('Admin bookings fetched:', res.data);
       setBookings(res.data || []);
     } catch (err) {
       console.error('fetchBookings error', err);
@@ -200,6 +201,22 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error('delete booking error', err);
       setError(err.response?.data?.message || 'Failed to delete booking');
+    }
+  };
+
+  // Confirm booking
+  const handleConfirmBooking = async (id) => {
+    setError('');
+    setSuccessMsg('');
+    try {
+      await axios.patch(`/admin/bookings/${id}/confirm`);
+      setSuccessMsg('Booking confirmed successfully. Chat is now available!');
+      await fetchBookings();
+      // Force refresh of chat list by triggering a re-render
+      window.dispatchEvent(new Event('bookingConfirmed'));
+    } catch (err) {
+      console.error('confirm booking error', err);
+      setError(err.response?.data?.message || 'Failed to confirm booking');
     }
   };
 
@@ -413,9 +430,27 @@ export default function AdminDashboard() {
                   <div className="text-sm text-slate-600 dark:text-slate-300">User: {b.user?.name} • {b.user?.email}</div>
                   <div className="text-sm">Start: {new Date(b.startTime).toLocaleString()}</div>
                   <div className="text-sm">End: {new Date(b.endTime).toLocaleString()}</div>
+                  <div className="text-sm">
+                    Status: <span className={`px-2 py-1 rounded text-xs ${
+                      b.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                      b.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                      b.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {b.status?.toUpperCase() || 'UNKNOWN'}
+                    </span>
+                  </div>
                 </div>
-                <div className="mt-3 md:mt-0">
-                  <button onClick={() => handleDeleteBooking(b._id)} className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Delete Booking</button>
+                <div className="mt-3 md:mt-0 flex gap-2">
+                  {b.status === 'pending' && (
+                    <button 
+                      onClick={() => handleConfirmBooking(b._id)} 
+                      className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+                    >
+                      Confirm
+                    </button>
+                  )}
+                  <button onClick={() => handleDeleteBooking(b._id)} className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Delete</button>
                 </div>
               </div>
             ))}

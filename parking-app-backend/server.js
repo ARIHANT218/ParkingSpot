@@ -47,14 +47,17 @@ io.on('connection', (socket) => {
   console.log('Socket connected', socket.user.id);
 
   socket.on('joinRoom', async ({ bookingId }) => {
+    console.log('joinRoom request:', { bookingId, userId: socket.user.id });
     try {
       const { ok, booking, reason } = await canAcessChat(socket.user, bookingId);
+      console.log('canAcessChat result:', { ok, reason, bookingStatus: booking?.status });
       if (!ok) {
         socket.emit('joinError', { message: reason });
         return;
       }
       const room = `booking_${bookingId}`;
       socket.join(room);
+      console.log('User joined room:', room);
       socket.emit('joined', { bookingId });
     } catch (err) {
       console.error('joinRoom error', err);
@@ -63,9 +66,11 @@ io.on('connection', (socket) => {
   });
 
   socket.on('sendMessage', async ({ bookingId, text }) => {
+    console.log('sendMessage request:', { bookingId, text, userId: socket.user.id });
     try {
       const { ok, booking, reason } = await canAcessChat(socket.user, bookingId);
       if (!ok) {
+        console.log('sendMessage access denied:', reason);
         socket.emit('sendError', { message: reason });
         return;
       }
@@ -77,10 +82,12 @@ io.on('connection', (socket) => {
         text,
       });
 
+      console.log('Message created:', msg);
       const room = `booking_${bookingId}`;
       io.to(room).emit('newMessage', msg);
+      console.log('Message broadcasted to room:', room);
     } catch (err) {
-      console.error(err);
+      console.error('sendMessage error:', err);
       socket.emit('sendError', { message: 'Unable to send message' });
     }
   });

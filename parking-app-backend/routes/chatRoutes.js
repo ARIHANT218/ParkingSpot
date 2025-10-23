@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const { protect } = require('../middleware/authMiddleware');
-const { getMessages, sendMessage , markRead , adminActiveChats } = require('../controllers/chatController');
+const { getMessages, sendMessage , markRead , adminActiveChats, testAdminChats } = require('../controllers/chatController');
 
 // sanity checks
 if (typeof protect !== 'function') {
@@ -19,5 +19,8 @@ router.patch('/:bookingId/read', protect, markRead);
 
 // admin-only
 router.get('/admin/active', protect, adminActiveChats);
+
+// test endpoint
+router.get('/test', testAdminChats);
 
 module.exports = router;

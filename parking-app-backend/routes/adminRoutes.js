@@ -8,7 +8,8 @@ const {
   deleteParkingLot,
   getAllBookings,
   getAllParkingLots,
-  deleteBooking
+  deleteBooking,
+  confirmBooking
 } = require('../controllers/adminController');
 
 // Create a parking lot
@@ -28,5 +29,8 @@ router.get('/bookings', protect, admin, getAllBookings);
 
 // Delete a booking (admin)
 router.delete('/bookings/:id', protect, admin, deleteBooking);
+
+// Confirm a booking (admin)
+router.patch('/bookings/:id/confirm', protect, admin, confirmBooking);
 
 module.exports = router;

@@ -6,6 +6,8 @@ import axios from '../api/axios'; // use your axios instance (baseURL + intercep
 const SOCKET_URL = 'http://localhost:5000';
 
 export default function BookingChat({ bookingId, token }) {
+  console.log('BookingChat component rendered with:', { bookingId, token: !!token });
+  
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [connected, setConnected] = useState(false);
@@ -40,7 +42,12 @@ export default function BookingChat({ bookingId, token }) {
 
   // Setup SocketIO connection (recreate when bookingId or token changes)
   useEffect(() => {
-    if (!bookingId || !token) return;
+    if (!bookingId || !token) {
+      console.log('BookingChat: Missing bookingId or token', { bookingId, token: !!token });
+      return;
+    }
+
+    console.log('BookingChat: Setting up socket connection', { bookingId });
 
     // cleanup any previous socket
     if (socketRef.current) {
@@ -57,8 +64,10 @@ export default function BookingChat({ bookingId, token }) {
 
     // connection lifecycle
     socket.on('connect', () => {
+      console.log('BookingChat: Socket connected');
       setConnected(true);
       // try to join the booking room
+      console.log('BookingChat: Joining room for booking', bookingId);
       socket.emit('joinRoom', { bookingId });
     });
 
@@ -78,6 +87,7 @@ export default function BookingChat({ bookingId, token }) {
 
     // normal new message event
     socket.on('newMessage', (msg) => {
+      console.log('BookingChat: Received new message', msg);
       // ensure message shape and avoid duplicates (optional)
       setMessages(prev => {
         // simple duplicate avoidance by _id
@@ -144,6 +154,9 @@ export default function BookingChat({ bookingId, token }) {
 
   return (
     <div className="border rounded-lg p-4 max-w-xl">
+      <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+        <p className="text-sm text-yellow-800">🔧 BookingChat Component Loaded - Booking ID: {bookingId}</p>
+      </div>
       <div className="mb-2 text-sm text-gray-500">
         {connected ? 'Connected' : 'Connecting...'}
       </div>

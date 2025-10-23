@@ -24,6 +24,7 @@ export default function ParkingDetails() {
           headers: { Authorization: `Bearer ${authToken}` }
         });
         setCurrentUser(res.data);
+        console.log('Current user data:', res.data);
       } catch (err) {
         console.error('Failed to fetch current user', err);
         // If token invalid you may want to clear it:
@@ -57,6 +58,31 @@ export default function ParkingDetails() {
     setBooking(null);
     setMessage('');
   }, [id]);
+
+  // Fetch existing bookings for this parking lot and current user
+  useEffect(() => {
+    const fetchExistingBooking = async () => {
+      if (!authToken || !currentUser) return;
+      try {
+        const res = await axios.get('/parking/my-bookings', {
+          headers: { Authorization: `Bearer ${authToken}` }
+        });
+        // Find booking for this parking lot
+        const existingBooking = res.data.find(b => 
+          String(b.parkingLot._id || b.parkingLot) === String(id)
+        );
+        console.log('Fetched bookings:', res.data);
+        console.log('Looking for parking lot ID:', id);
+        console.log('Found existing booking:', existingBooking);
+        if (existingBooking) {
+          setBooking(existingBooking);
+        }
+      } catch (err) {
+        console.error('Failed to fetch existing bookings', err);
+      }
+    };
+    fetchExistingBooking();
+  }, [id, authToken, currentUser]);
 
   // validate times
   const isValidTimes = () => {
@@ -97,10 +123,25 @@ export default function ParkingDetails() {
 
   // helper to check if current user is owner OR admin
   const isBookingParticipant = (bookingObj) => {
-    if (!bookingObj || !currentUser) return false;
+    if (!bookingObj || !currentUser) {
+      console.log('isBookingParticipant: Missing data', { bookingObj: !!bookingObj, currentUser: !!currentUser });
+      return false;
+    }
     const bookingUserId = bookingObj.user?._id || bookingObj.user; // could be populated user object or id
-    return String(currentUser.id || currentUser._id || currentUser._id) === String(bookingUserId)
-      || currentUser.role === 'admin';
+    const currentUserId = currentUser.id || currentUser._id;
+    const isOwner = String(currentUserId) === String(bookingUserId);
+    const isAdmin = currentUser.role === 'admin';
+    
+    console.log('isBookingParticipant check:', {
+      bookingUserId,
+      currentUserId,
+      isOwner,
+      isAdmin,
+      bookingStatus: bookingObj.status,
+      result: isOwner || isAdmin
+    });
+    
+    return isOwner || isAdmin;
   };
 
   if (!parking) return <p className="p-6">Loading parking details...</p>;
@@ -172,13 +213,35 @@ export default function ParkingDetails() {
       {/* Chat: render only if booking exists, status confirmed, and current user is participant (owner or admin) */}
       <div className="mt-6">
         {booking ? (
-          (booking.status === 'confirmed' && isBookingParticipant(booking)) ? (
-            <BookingChat bookingId={booking._id || booking.id} token={authToken} />
-          ) : (
-            <div className="text-sm text-gray-500">
-              Chat available only for confirmed bookings to booking owner or admin.
-            </div>
-          )
+          (() => {
+            const isConfirmed = booking.status === 'confirmed';
+            const isParticipant = isBookingParticipant(booking);
+            console.log('Chat rendering check:', {
+              bookingStatus: booking.status,
+              isConfirmed,
+              isParticipant,
+              shouldShowChat: isConfirmed && isParticipant
+            });
+            
+            return (isConfirmed && isParticipant) ? (
+              <div>
+                <div className="mb-2 p-2 bg-green-50 border border-green-200 rounded">
+                  <p className="text-sm text-green-800">✅ Chat is now available!</p>
+                </div>
+                <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                  <p className="text-sm text-blue-800">Debug: Booking ID: {booking._id || booking.id}, Token: {authToken ? 'Present' : 'Missing'}</p>
+                </div>
+                <BookingChat bookingId={booking._id || booking.id} token={authToken} />
+              </div>
+            ) : (
+              <div className="text-sm text-gray-500">
+                {booking.status === 'pending' ? 
+                  'Chat will be available once your booking is confirmed by admin.' :
+                  `Chat available only for confirmed bookings to booking owner or admin. Status: ${booking.status}, Participant: ${isParticipant}`
+                }
+              </div>
+            );
+          })()
         ) : (
           <div className="text-sm text-gray-500">Chat will appear here after a successful booking.</div>
         )}

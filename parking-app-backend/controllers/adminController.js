@@ -117,3 +117,21 @@ exports.deleteBooking = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+// CONFIRM booking (admin) — changes status to confirmed
+exports.confirmBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findByIdAndUpdate(
+      req.params.id, 
+      { status: 'confirmed' }, 
+      { new: true, runValidators: true }
+    ).populate('user', 'name email').populate('parkingLot', 'name location city');
+    
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+    
+    res.json({ message: 'Booking confirmed successfully', booking });
+  } catch (error) {
+    console.error('confirmBooking error:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
