@@ -34,6 +34,7 @@ Admins can manage parking spaces, monitor availability, and view bookings.
 * Search for nearby parking lots using map or city name
 * View parking prices, ratings, and amenities
 * Reserve parking for specific time slots
+* Real-time chat between admin and users.
 * View active and past bookings
 * Get QR code for entry
 * Edit or cancel Booking parking
@@ -159,6 +160,7 @@ Server will run at **[http://localhost:5000](http://localhost:5000)**
 
 **Arihant Jain**
 Full-Stack Developer | AI & ML Enthusiasts 
+
 
 
 
