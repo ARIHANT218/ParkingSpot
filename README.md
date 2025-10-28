@@ -14,7 +14,8 @@ Admins can efficiently manage parking lots, monitor bookings, and view availabil
 
 ## 🖼️ App Preview
 
-| ![App Image 1](https://github.com/user-attachments/assets/bca57e72-ccc7-4171-b4df-faf76460aa55) | ![App Image 2](https://github.com/user-attachments/assets/13f1feba-f6f8-40a8-b283-b1b7ccb4c352) |
+| ![App Image 1]<img width="1362" height="608" alt="image" src="https://github.com/user-attachments/assets/efb9ce9e-fe3f-435b-85ed-4aac3069c604" />
+ | ![App Image 2](https://github.com/user-attachments/assets/13f1feba-f6f8-40a8-b283-b1b7ccb4c352) |
 |:--:|:--:|
 | ![App Image 3](https://github.com/user-attachments/assets/91fc148b-49a2-45ff-8e79-dfbf253e090a) | ![App Image 4](https://github.com/user-attachments/assets/42077bf3-7e04-43fd-ab37-96fd7b3bd3cb) |
 | ![App Image 5](https://github.com/user-attachments/assets/824215dd-7505-4423-b7e8-fc991b3c2a3d) |  |
@@ -146,6 +147,7 @@ Server will run at **[http://localhost:5000](http://localhost:5000)**
 
 **Arihant Jain**
 Full-Stack Developer | AI & ML Enthusiasts 
+
 
 
 
