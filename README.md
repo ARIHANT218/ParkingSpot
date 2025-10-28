@@ -18,11 +18,11 @@ Admins can manage parking lots, monitor bookings, and view availability via an i
 
 | Dashboard | Search / Listings |
 |:--:|:--:|
-| ![Dashboard screenshot](https://github.com/user-attachments/assets/efb9ce9e-fe3f-435b-85ed-4aac3069c604) | ![Search screenshot](https://github.com/user-attachments/assets/13f1feba-f6f8-40a8-b283-b1b7ccb4c352) |
+| ![Dashboard screenshot](https://github.com/user-attachments/assets/efb9ce9e-fe3f-435b-85ed-4aac3069c604) | ![Bokking screenshot](https://github.com/user-attachments/assets/13f1feba-f6f8-40a8-b283-b1b7ccb4c352) |
 
 | Booking / QR | Admin: Lots list |
 |:--:|:--:|
-| ![Booking screenshot](https://github.com/user-attachments/assets/91fc148b-49a2-45ff-8e79-dfbf253e090a) | ![Admin lots screenshot](https://github.com/user-attachments/assets/42077bf3-7e04-43fd-ab37-96fd7b3bd3cb) |
+| ![Chat with Admin screenshot](https://github.com/user-attachments/assets/91fc148b-49a2-45ff-8e79-dfbf253e090a) | ![Admin lots screenshot](https://github.com/user-attachments/assets/42077bf3-7e04-43fd-ab37-96fd7b3bd3cb) |
 
 | Reviews / Misc |
 |:--:|
@@ -111,6 +111,7 @@ Server will run at **[http://localhost:5000](http://localhost:5000)**
 
 **Arihant Jain**
 Full-Stack Developer | AI & ML Enthusiasts 
+
 
 
 
