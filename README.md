@@ -14,14 +14,21 @@ Admins can manage parking lots, monitor bookings, and view availability via an i
 
 ## 🖼️ App Preview
 
-> Replace the image URLs below with project screenshots hosted in the repo (e.g. `/assets/screenshot-1.png`) or on GitHub.
+> Screenshots / app previews (hosted assets). Replace with local `/assets/...` files if you prefer keeping images in repo.
 
-| ![Dashboard screenshot](/assets/screenshot-1.png) | ![Search screenshot](/assets/screenshot-2.png) |
+| Dashboard | Search / Listings |
 |:--:|:--:|
-| ![Booking screenshot](/assets/screenshot-3.png) | ![QR screenshot](/assets/screenshot-4.png) |
+| ![Dashboard screenshot](https://github.com/user-attachments/assets/efb9ce9e-fe3f-435b-85ed-4aac3069c604) | ![Search screenshot](https://github.com/user-attachments/assets/13f1feba-f6f8-40a8-b283-b1b7ccb4c352) |
+
+| Booking / QR | Admin: Lots list |
+|:--:|:--:|
+| ![Booking screenshot](https://github.com/user-attachments/assets/91fc148b-49a2-45ff-8e79-dfbf253e090a) | ![Admin lots screenshot](https://github.com/user-attachments/assets/42077bf3-7e04-43fd-ab37-96fd7b3bd3cb) |
+
+| Reviews / Misc |
+|:--:|
+| ![Misc screenshot](https://github.com/user-attachments/assets/824215dd-7505-4423-b7e8-fc991b3c2a3d) |
 
 ---
-
 ## 🧭 How It Works
 
 1. **Register / Login** — users authenticate using JWT.
@@ -104,6 +111,7 @@ Server will run at **[http://localhost:5000](http://localhost:5000)**
 
 **Arihant Jain**
 Full-Stack Developer | AI & ML Enthusiasts 
+
 
 
 
