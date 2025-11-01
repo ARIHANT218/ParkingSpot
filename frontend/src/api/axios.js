@@ -22,8 +22,7 @@ instance.interceptors.request.use(
         }
       }
     } catch (err) {
-      // Don't block requests on storage/read errors — just log for debugging
-      // eslint-disable-next-line no-console
+      
       console.error('axios request interceptor - token read error:', err);
     }
     return config;
@@ -31,22 +30,15 @@ instance.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor to help debug auth / server errors
 instance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error && error.response) {
       const { status, data } = error.response;
-      // helpful debug logs
-      // eslint-disable-next-line no-console
+      
       console.warn(`API response error: ${status}`, data);
 
-      // Optional behavior (uncomment if you want automatic client-side handling)
-      // if (status === 401) {
-      //   // token invalid/expired — you might want to redirect to login or clear token
-      //   localStorage.removeItem('token');
-      //   window.location.href = '/login';
-      // }
+    
     }
     return Promise.reject(error);
   }

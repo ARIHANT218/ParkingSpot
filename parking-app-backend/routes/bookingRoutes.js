@@ -1,11 +1,12 @@
+// routes/bookingRoutes.js
 const express = require('express');
 const router = express.Router();
-const bookingController = require('../controllers/adminController');
-const authMiddleware = require('../middleware/authMiddleware');
+const bookingController = require('../controllers/adminController'); // keep same if correct
+const { protect } = require('../middleware/authMiddleware'); // <- destructure protect
 
-router.post('/', authMiddleware, bookingController.createBooking);
-router.get('/:id', authMiddleware, bookingController.getBookingById);
-router.get('/user/:userId', authMiddleware, bookingController.getBookingsByUser);
-router.patch('/:id/cancel', authMiddleware, bookingController.cancelBooking);
+router.post('/', protect, bookingController.createBooking);
+router.get('/:id', protect, bookingController.getBookingById);
+router.get('/user/:userId', protect, bookingController.getBookingsByUser);
+router.patch('/:id/cancel', protect, bookingController.cancelBooking);
 
 module.exports = router;

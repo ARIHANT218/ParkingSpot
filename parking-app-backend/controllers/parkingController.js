@@ -14,10 +14,17 @@ exports.getParkingLots = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
-
-// ------------------ Book Parking ------------------
+// controllers/adminController.js (bookParking)
 exports.bookParking = async (req, res) => {
   try {
+    // Defensive checks
+    if (!req.user) {
+      return res.status(401).json({ message: 'You must be logged in to book parking' });
+    }
+
+    const userId = req.user._id || req.user.id; // support both shapes
+    const userName = req.user.name || req.user.fullName || 'User';
+
     const parkingLot = await ParkingLot.findById(req.params.id);
     if (!parkingLot) return res.status(404).json({ message: 'Parking lot not found' });
 
@@ -28,14 +35,14 @@ exports.bookParking = async (req, res) => {
     }
 
     const booking = await Booking.create({
-      user: req.user._id,
+      user: userId,
       parkingLot: parkingLot._id,
       startTime,
       endTime
     });
 
     // Generate QR code for booking
-    const qrData = `BookingID:${booking._id} User:${req.user.name} ParkingLot:${parkingLot.name}`;
+    const qrData = `BookingID:${booking._id} User:${userName} ParkingLot:${parkingLot.name}`;
     const qrCode = await QRCode.toDataURL(qrData);
     booking.qrCode = qrCode;
     await booking.save();
@@ -46,14 +53,18 @@ exports.bookParking = async (req, res) => {
 
     res.status(201).json(booking);
   } catch (error) {
+    console.error('bookParking error:', error);
     res.status(400).json({ message: error.message });
   }
 };
 
 // ------------------ Get User's Bookings ------------------
+// getMyBookings
 exports.getMyBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find({ user: req.user._id })
+    if (!req.user) return res.status(401).json({ message: 'Not authorized' });
+    const userId = req.user._id || req.user.id;
+    const bookings = await Booking.find({ user: userId })
       .populate('parkingLot', 'name location city pricePerHour availableSlots');
     res.json(bookings);
   } catch (error) {
