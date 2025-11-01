@@ -3,6 +3,8 @@
 A full-stack web application that enables users to **search, compare, and book parking spots in real time**.  
 Provides a seamless experience for drivers and admins — from reserving a parking spot to managing parking lots and bookings.
 
+LIVE -- https://parking-spot-mu.vercel.app/
+
 ---
 
 ## 📘 Overview
@@ -111,6 +113,7 @@ Server will run at **[http://localhost:5000](http://localhost:5000)**
 
 **Arihant Jain**
 Full-Stack Developer | AI & ML Enthusiasts 
+
 
 
 
