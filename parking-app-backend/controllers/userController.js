@@ -1,6 +1,7 @@
 // controllers/userController.js
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const User = require('../models/user');
+
 
 // Generate JWT including role
 const generateToken = (id, role) => jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '1d' });

@@ -8,7 +8,7 @@ const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const Message = require('./models/Message');
 const Booking = require('./models/Booking');
-const User = require('./models/User');
+const User = require('./models/user');
 const authMiddleware = require('./middleware/authMiddleware'); // existing
 
 dotenv.config();

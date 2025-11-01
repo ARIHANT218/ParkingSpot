@@ -1,7 +1,7 @@
 // createAdmin.js
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const User = require('./models/User'); // adjust path if needed
+const User = require('./models/user'); // adjust path if needed
 
 dotenv.config();
 
