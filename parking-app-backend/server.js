@@ -20,14 +20,17 @@ const app = express();
 app.use(express.json());
 
 const cors = require('cors');
-app.use(cors({ origin: 'https://parking-spot-git-main-arihants-projects-1c502839.vercel.app/' }));
+app.use(cors({ 
+  
+  origin: "https://parking-spot-cm2wdc5h7-arihants-projects-1c502839.vercel.app",
+}));
 
 app.use(express.urlencoded({ extended: true }));
 
 // Chat message
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: 'https://parking-spot-git-main-arihants-projects-1c502839.vercel.app/' } // change origin to your frontend in production
+  cors: { origin: 'https://parking-spot-cm2wdc5h7-arihants-projects-1c502839.vercel.app' } // change origin to your frontend in production
 });
 app.set('io', io);
 
