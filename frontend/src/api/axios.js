@@ -1,8 +1,8 @@
 // src/api/axios.js
 import axios from 'axios';
-const API_BASE = process.env.VITE_APP_API_URL || 'http://localhost:5000';
+
 const instance = axios.create({
-  baseURL: `${API_BASE}/api`, // backend API
+  baseURL: 'https://parkingspot-odd3.onrender.com/api', // backend API
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
