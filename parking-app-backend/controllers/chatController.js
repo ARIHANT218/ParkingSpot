@@ -1,14 +1,26 @@
-const { canAcessChat } = require('../utils/chatAuth');
+// controllers/chatController.js
+const mongoose = require('mongoose');
+const { canAcessChat } = require('../utils/chatAuth'); // keep your existing name
 const Message = require('../models/Message');
 const Booking = require('../models/Booking');
 
+/**
+ * Get messages for a booking (only allowed participants).
+ */
 const getMessages = async (req, res) => {
   try {
     const { bookingId } = req.params;
+    if (!bookingId) return res.status(400).json({ message: 'bookingId required' });
+
     const { ok, booking, reason } = await canAcessChat(req.user, bookingId);
     if (!ok) return res.status(403).json({ message: reason || 'Access denied' });
 
-    const messages = await Message.find({ bookingId }).sort('createdAt');
+    // Query both ObjectId and string forms to be resilient to schema inconsistencies
+    const query = mongoose.Types.ObjectId.isValid(bookingId)
+      ? { $or: [{ bookingId: mongoose.Types.ObjectId(bookingId) }, { bookingId }] }
+      : { bookingId };
+
+    const messages = await Message.find(query).sort({ createdAt: 1 }).lean();
     return res.json(messages);
   } catch (err) {
     console.error('getMessages error', err);
@@ -16,24 +28,38 @@ const getMessages = async (req, res) => {
   }
 };
 
+/**
+ * Send a message (only allowed participants).
+ */
 const sendMessage = async (req, res) => {
   try {
     const { bookingId } = req.params;
     const { text } = req.body;
+
+    if (!bookingId) return res.status(400).json({ message: 'bookingId required' });
     if (!text || !text.trim()) return res.status(400).json({ message: 'Message text required' });
 
     const { ok, booking, reason } = await canAcessChat(req.user, bookingId);
     if (!ok) return res.status(403).json({ message: reason || 'Access denied' });
 
+    // Save bookingId as ObjectId when possible (safer if schema expects ObjectId)
+    const bookingIdToSave = mongoose.Types.ObjectId.isValid(bookingId)
+      ? mongoose.Types.ObjectId(bookingId)
+      : bookingId;
+
     const msg = await Message.create({
-      bookingId,
+      bookingId: bookingIdToSave,
       sender: req.user.id,
       senderRole: req.user.role || 'user',
       text,
+      createdAt: new Date()
     });
 
+    // emit to socket room (if io present)
     const io = req.app.get('io');
-    if (io) io.to(`booking_${bookingId}`).emit('newMessage', msg);
+    if (io) {
+      io.to(`booking_${bookingId}`).emit('newMessage', msg);
+    }
 
     return res.status(201).json(msg);
   } catch (err) {
@@ -42,90 +68,108 @@ const sendMessage = async (req, res) => {
   }
 };
 
-// admin: list active chats with latest message + unread counts
+/**
+ * Admin: list active chats (confirmed bookings) with last message & unread counts.
+ */
 async function adminActiveChats(req, res) {
   try {
-    console.log('adminActiveChats called by user:', req.user.id, 'role:', req.user.role);
-    
-    // only admin
-    if (req.user.role !== 'admin') {
-      console.log('Access denied - user is not admin');
+    console.log('adminActiveChats called by user:', req.user?.id, 'role:', req.user?.role);
+
+    // require admin role (case-insensitive)
+    if (!req.user || String(req.user.role).toLowerCase() !== 'admin') {
+      console.log('Access denied - user is not admin or not authenticated', req.user);
       return res.status(403).json({ message: 'Not authorized' });
     }
 
-    // Get all confirmed bookings first
+    // find confirmed bookings (you can expand statuses if needed)
     const confirmedBookings = await Booking.find({ status: 'confirmed' })
       .populate('user', 'name email')
       .populate('parkingLot', 'name location city')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
-    console.log('Found confirmed bookings:', confirmedBookings.length);
-    console.log('Confirmed booking details:', confirmedBookings.map(b => ({
-      id: b._id,
-      user: b.user?.name || b.user?.email,
-      parkingLot: b.parkingLot?.name,
-      status: b.status
-    })));
+    // If no bookings, return early
+    if (!confirmedBookings || confirmedBookings.length === 0) {
+      return res.json([]);
+    }
 
-    // Get messages for these bookings
-    const bookingIds = confirmedBookings.map(b => b._id);
-    const messages = await Message.find({ bookingId: { $in: bookingIds } })
-      .sort({ createdAt: -1 });
+    // Prepare booking id lists (ObjectId and string)
+    const bookingObjectIds = confirmedBookings.map(b => b._id).filter(Boolean);
+    const bookingIdStrings = bookingObjectIds.map(id => String(id));
 
-    console.log('Found messages:', messages.length);
+    // Query messages that match either ObjectId or string bookingId
+    const messages = await Message.find({
+      $or: [
+        { bookingId: { $in: bookingObjectIds } },
+        { bookingId: { $in: bookingIdStrings } }
+      ]
+    })
+      .sort({ createdAt: -1 })
+      .lean();
 
-    // Group messages by bookingId
+    // Group messages by bookingId (normalized to string key)
     const messagesByBooking = {};
     messages.forEach(msg => {
-      if (!messagesByBooking[msg.bookingId]) {
-        messagesByBooking[msg.bookingId] = [];
-      }
-      messagesByBooking[msg.bookingId].push(msg);
+      const key = String(msg.bookingId);
+      if (!messagesByBooking[key]) messagesByBooking[key] = [];
+      messagesByBooking[key].push(msg);
     });
 
-    // Build results
+    // Build the results
     const results = confirmedBookings.map(booking => {
-      const bookingMessages = messagesByBooking[booking._id] || [];
-      const lastMessage = bookingMessages[0]; // Most recent message
-      
-      // Count unread messages for admin
-      const unreadForAdmin = bookingMessages.filter(msg => 
-        msg.senderRole !== 'admin' && 
-        !msg.readBy.includes(req.user.id)
-      ).length;
+      const bid = String(booking._id);
+      const bookingMessages = messagesByBooking[bid] || [];
+      const lastMessage = bookingMessages[0] || null; // most recent because sorted desc above
+
+      // Count unread messages for admin:
+      // - consider message unread for admin when sender is NOT admin and admin's id is not in readBy
+      const unreadForAdmin = bookingMessages.reduce((count, msg) => {
+        const senderRole = String(msg.senderRole || '').toLowerCase();
+        const readBy = Array.isArray(msg.readBy) ? msg.readBy.map(String) : [];
+        const adminHasRead = readBy.includes(String(req.user.id));
+        if (senderRole !== 'admin' && !adminHasRead) return count + 1;
+        return count;
+      }, 0);
 
       return {
-        bookingId: booking._id,
+        bookingId: bid,
         booking,
-        lastMessage: lastMessage?.text || 'No messages yet',
-        lastCreatedAt: lastMessage?.createdAt || booking.createdAt,
-        unreadForAdmin: unreadForAdmin
+        lastMessage: lastMessage ? (lastMessage.text ?? null) : null,
+        lastCreatedAt: lastMessage?.createdAt ?? booking.createdAt,
+        unreadForAdmin
       };
     });
 
-    console.log('Admin active chats result:', results.length, 'chats prepared');
-    console.log('Results:', results.map(r => ({
-      bookingId: r.bookingId,
-      userName: r.booking.user?.name || r.booking.user?.email,
-      lastMessage: r.lastMessage
-    })));
-
-    res.json(results);
+    console.log('Admin active chats result count:', results.length);
+    return res.json(results);
   } catch (err) {
-    console.error('adminActiveChats error', err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('adminActiveChats error:', err);
+    return res.status(500).json({ message: 'Server error' });
   }
 }
 
-// mark messages read for current user
+/**
+ * Mark messages read for the current user in a booking
+ */
 async function markRead(req, res) {
   try {
     const { bookingId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user?.id;
+    if (!bookingId) return res.status(400).json({ message: 'bookingId required' });
+    if (!userId) return res.status(401).json({ message: 'Not authenticated' });
+
+    // Build booking filter resilient to ObjectId/string mismatch
+    const orFilters = [];
+    if (mongoose.Types.ObjectId.isValid(bookingId)) {
+      orFilters.push({ bookingId: mongoose.Types.ObjectId(bookingId) });
+    }
+    orFilters.push({ bookingId });
+
     await Message.updateMany(
-      { bookingId, readBy: { $ne: userId } },
-      { $push: { readBy: userId } }
+      { $and: [{ $or: orFilters }, { readBy: { $ne: String(userId) } }] },
+      { $addToSet: { readBy: String(userId) } }
     );
+
     return res.json({ ok: true });
   } catch (err) {
     console.error('markRead error', err);
@@ -133,23 +177,25 @@ async function markRead(req, res) {
   }
 }
 
-// Test endpoint to check if admin chat system is working
+/**
+ * Debug/test endpoint for admin chats
+ */
 async function testAdminChats(req, res) {
   try {
-    console.log('Test admin chats endpoint called');
-    const confirmedBookings = await Booking.find({ status: 'confirmed' });
-    const allBookings = await Booking.find();
-    
+    console.log('Test admin chats endpoint called by user:', req.user?.id);
+    const confirmedBookings = await Booking.find({ status: 'confirmed' }).lean();
+    const allBookings = await Booking.find().lean();
+
     res.json({
       message: 'Test endpoint working',
       confirmedBookings: confirmedBookings.length,
       allBookings: allBookings.length,
-      confirmedBookingIds: confirmedBookings.map(b => b._id),
-      allBookingStatuses: allBookings.map(b => ({ id: b._id, status: b.status }))
+      confirmedBookingIds: confirmedBookings.map(b => String(b._id)),
+      allBookingStatuses: allBookings.map(b => ({ id: String(b._id), status: b.status }))
     });
   } catch (err) {
     console.error('Test admin chats error', err);
-    res.status(500).json({ message: 'Test error', error: err.message });
+    return res.status(500).json({ message: 'Test error', error: err.message });
   }
 }
 
@@ -160,4 +206,3 @@ module.exports = {
   markRead,
   testAdminChats
 };
-
