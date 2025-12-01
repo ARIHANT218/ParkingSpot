@@ -15,27 +15,21 @@ Admins can manage parking lots, monitor bookings, and view availability via an i
 ---
 
 ## 🖼️ App Preview
+|                                       Homepage                                       |                                    Admin Dashboard                                   |
+| :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: |
+| ![](https://github.com/user-attachments/assets/b036d361-c1f4-4136-96d3-38b49fa6b415) | ![](https://github.com/user-attachments/assets/bcfc2038-065f-4d84-a3c7-213e2fdf3d43) |
 
-Frontend Page: <img width="1360" height="684" alt="image" src="https://github.com/user-attachments/assets/b036d361-c1f4-4136-96d3-38b49fa6b415" />
-------
+|                                  Booking & Listings                                  |                                     Chat Support                                     |
+| :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: |
+| ![](https://github.com/user-attachments/assets/13f1feba-f6f8-40a8-b283-b1b7ccb4c352) | ![](https://github.com/user-attachments/assets/91fc148b-49a2-45ff-8e79-dfbf253e090a) |
 
-Admin DashBoard : <img width="877" height="653" alt="Screenshot 2025-11-30 195259" src="https://github.com/user-attachments/assets/bcfc2038-065f-4d84-a3c7-213e2fdf3d43" />
+|                                Parking Lots Management                               |                                        Reviews                                       |
+| :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: |
+| ![](https://github.com/user-attachments/assets/42077bf3-7e04-43fd-ab37-96fd7b3bd3cb) | ![](https://github.com/user-attachments/assets/824215dd-7505-4423-b7e8-fc991b3c2a3d) |
 
 
 
-> Screenshots / app previews (hosted assets). Replace with local `/assets/...` files if you prefer keeping images in repo.
 
-| Dashboard | Bokking / Listings |
-|:--:|:--:|
-| ![Dashboard screenshot](https://github.com/user-attachments/assets/efb9ce9e-fe3f-435b-85ed-4aac3069c604) | ![Bokking screenshot](https://github.com/user-attachments/assets/13f1feba-f6f8-40a8-b283-b1b7ccb4c352) |
-
-| Chats  | Admin: Lots list |
-|:--:|:--:|
-| ![Chat with Admin screenshot](https://github.com/user-attachments/assets/91fc148b-49a2-45ff-8e79-dfbf253e090a) | ![Admin lots screenshot](https://github.com/user-attachments/assets/42077bf3-7e04-43fd-ab37-96fd7b3bd3cb) |
-
-| Reviews / Misc |
-|:--:|
-| ![Misc screenshot](https://github.com/user-attachments/assets/824215dd-7505-4423-b7e8-fc991b3c2a3d) |
 
 ---
 ## 🧭 How It Works
@@ -120,6 +114,7 @@ Server will run at **[http://localhost:5000](http://localhost:5000)**
 
 **Arihant Jain**
 Full-Stack Developer | AI & ML Enthusiasts 
+
 
 
 
