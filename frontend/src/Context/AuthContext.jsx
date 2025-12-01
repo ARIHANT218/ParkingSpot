@@ -1,4 +1,4 @@
-// src/context/AuthContext.jsx
+
 import React, { createContext, useEffect, useState } from "react";
 
 // give a default object so useContext(AuthContext) never returns undefined by default
