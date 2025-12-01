@@ -16,6 +16,13 @@ Admins can manage parking lots, monitor bookings, and view availability via an i
 
 ## 🖼️ App Preview
 
+Frontend Page: <img width="1360" height="684" alt="image" src="https://github.com/user-attachments/assets/b036d361-c1f4-4136-96d3-38b49fa6b415" />
+------
+
+Admin DashBoard : <img width="877" height="653" alt="Screenshot 2025-11-30 195259" src="https://github.com/user-attachments/assets/bcfc2038-065f-4d84-a3c7-213e2fdf3d43" />
+
+
+
 > Screenshots / app previews (hosted assets). Replace with local `/assets/...` files if you prefer keeping images in repo.
 
 | Dashboard | Bokking / Listings |
@@ -113,6 +120,7 @@ Server will run at **[http://localhost:5000](http://localhost:5000)**
 
 **Arihant Jain**
 Full-Stack Developer | AI & ML Enthusiasts 
+
 
 
 
