@@ -11,6 +11,7 @@ const Booking = require('./models/Booking');
 const User = require('./models/user');
 const authMiddleware = require('./middleware/authMiddleware'); // existing
 
+
 dotenv.config();
 connectDB();
 
@@ -20,17 +21,28 @@ const app = express();
 app.use(express.json());
 
 const cors = require('cors');
-app.use(cors({ 
+
+// app.use(cors({ 
   
-  origin: "https://parking-spot-mu.vercel.app",
-}));
+//   origin: "https://parking-spot-mu.vercel.app",
+// }));
+
+const corsOptions = {
+  origin: "http://localhost:5173", // your frontend origin
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+
 
 app.use(express.urlencoded({ extended: true }));
 
 // Chat message
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: 'https://parking-spot-mu.vercel.app' } // change origin to your frontend in production
+  cors: { origin: 'http://localhost:5000' } // change origin to your frontend in production
 });
 app.set('io', io);
 
@@ -40,7 +52,7 @@ io.use(async (socket, next) => {
     const token = socket.handshake.auth?.token;
     if (!token) return next(new Error('Authentication error'));
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    socket.user = { id: payload.id, role: payload.role }; // adjust based on your token
+    socket.user = { id: payload.id, role: payload.role }; 
     return next();
   } catch (err) {
     return next(new Error('Authentication error'));
@@ -105,7 +117,10 @@ io.on('connection', (socket) => {
 });
 
 app.use('/api/users', require('./routes/userRoutes'));
-app.use('/api/admin', require('./routes/adminRoutes'));
+
+app.use('/api/admin', require('./routes/adminManager'));
+
+app.use('/api/manager', require('./routes/managerRoutes'));
 app.use('/api/parking', require('./routes/parkingRoutes'));
 app.use('/api/chats', require('./routes/chatRoutes'));
 

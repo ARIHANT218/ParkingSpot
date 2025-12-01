@@ -18,8 +18,7 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ message: 'Not authorized, user not found' });
     }
 
-    // Attach the full user document to req.user so controllers can use req.user._id, req.user.name, etc.
-    req.user = user;
+    req.user = { id: decoded.id, role: decoded.role };
 
     next();
   } catch (error) {
@@ -28,12 +27,15 @@ const protect = async (req, res, next) => {
   }
 };
 
-const admin = (req, res, next) => {
-  if (req.user && req.user.isAdmin) {
-    next();
-  } else {
-    res.status(403).json({ message: 'Admin access required' });
-  }
-};
 
-module.exports = { protect, admin };
+function authorize(...allowedRoles) {
+  return (req, res, next) => {
+    if (!req.user) return res.status(401).json({ message: 'Not authenticated' });
+    if (!allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ message: 'Forbidden: insufficient privileges' });
+    }
+    next();
+  };
+}
+
+module.exports = { protect, authorize };

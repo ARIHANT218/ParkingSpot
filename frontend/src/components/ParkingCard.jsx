@@ -1,4 +1,4 @@
-// src/components/ParkingCard.jsx
+
 import { Link } from 'react-router-dom';
 
 export default function ParkingCard({ lot }) {

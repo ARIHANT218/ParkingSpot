@@ -1,11 +1,26 @@
-import { Navigate } from 'react-router-dom';
 
-export default function ProtectedRoute({ children, admin }) {
-  const token = localStorage.getItem('token');
-  const role = localStorage.getItem('role');
+import React, { useContext } from "react";
+import { Navigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext.jsx";
 
-  if (!token) return <Navigate to="/login" />; // Not logged in
-  if (admin && role !== 'admin') return <Navigate to="/" />; // Not admin
+export default function ProtectedRoute({ allowedRoles = [], children }) {
+  const { user } = useContext(AuthContext);
 
+  // ⏳ WAIT while user is being restored from localStorage on page load
+  if (user === undefined || user === null) {
+    return <div className="text-center p-5">Loading...</div>;
+  }
+
+  // ❌ NOT logged in
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // ❌ Does not have permission
+  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/" replace />;
+  }
+
+  // 👍 ALLOWED
   return children;
 }

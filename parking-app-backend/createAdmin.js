@@ -1,32 +1,29 @@
-// createAdmin.js
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const User = require('./models/user'); // adjust path if needed
-
-dotenv.config();
+const mongoose = require("mongoose");
+const User = require("./models/User");
+require("dotenv").config();
 
 async function createAdmin() {
   try {
-    await mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });
+    await mongoose.connect(process.env.MONGO_URI);
 
-    // Remove any existing admin with that email (optional)
-    await User.deleteOne({ email: 'admin@example.com' });
+    // const adminExists = await User.findOne({ role: "admin" });
+    // if (adminExists) {
+    //   console.log("Admin already exists!");
+    //   return process.exit();
+    // }
 
-    // Create admin — pass plaintext password so model's pre-save hook hashes it exactly once
-    const admin = new User({
-      name: 'Admin',
-      email: 'admin@example.com',
-      password: 'admin123', // plaintext: model will hash it once
-      isAdmin: true         // use isAdmin if your schema uses this boolean
-      // OR if your schema uses role string, use role: 'admin'
+    await User.create({
+      name: "Super Admin",
+      email: "Superadmin@gmail.com",
+      password: "Admin@123", // hash will run inside model
+      role: "admin"
     });
 
-    await admin.save();
-    console.log('✅ Admin created:', admin.email);
-    await mongoose.disconnect();
+    console.log("Admin created successfully!");
+    process.exit();
   } catch (err) {
     console.error(err);
-    process.exit(1);
+    process.exit();
   }
 }
 

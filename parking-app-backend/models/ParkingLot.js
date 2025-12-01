@@ -1,16 +1,25 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const parkingLotSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  location: { type: String, required: true },
-  latitude: Number,   // add this
-  longitude: Number, 
-  city: { type: String, required: true },
-  pricePerHour: { type: Number, required: true },
-  capacity: { type: Number, required: true },
-  availableSlots: { type: Number, required: true },
+  name: String,
+  location: String,
+  city: String,
+  latitude: Number,
+  longitude: Number,
+  pricePerHour: Number,
+  capacity: Number,
+  availableSlots: Number,
   amenities: [String],
-  rating: { type: Number, default: 0 }
+
+
+  manager: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
 });
 
-module.exports = mongoose.model('ParkingLot', parkingLotSchema);
+module.exports = mongoose.model("ParkingLot", parkingLotSchema);
+
+
+

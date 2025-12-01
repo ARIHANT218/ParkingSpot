@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from '../api/axios';
-import BookingChat from '../components/BookingChat';
+import BookingChat from './BookingChat';
 
 export default function UserBookings() {
   const [bookings, setBookings] = useState([]);
@@ -131,16 +131,18 @@ export default function UserBookings() {
         ))}
       </div>
 
-      {/* Chat Section */}
-      {selectedBookingId && (
-        <div className="mt-6 p-4 bg-white border rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Chat with Admin</h3>
-          <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
-            <p className="text-sm text-yellow-800">🔧 Debug: Chat component should load here</p>
-          </div>
-          <BookingChat bookingId={selectedBookingId} token={authToken} />
-        </div>
-      )}
+     {selectedBookingId && (
+  <div className="mt-6 p-4 bg-white border rounded-lg shadow max-w-3xl">
+    <h3 className="text-lg font-semibold mb-3">
+      Chat about booking: {selectedBookingId}
+    </h3>
+    <BookingChat
+      key={selectedBookingId}
+      bookingId={selectedBookingId}
+      token={authToken}
+    />
+  </div>
+)}
 
       {/* Debug Section - Always show for testing */}
       <div className="mt-6 p-4 bg-gray-100 border rounded">

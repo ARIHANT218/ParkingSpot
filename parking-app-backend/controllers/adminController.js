@@ -1,137 +1,179 @@
-// controllers/adminController.js
-const ParkingLot = require('../models/ParkingLot');
-const Booking = require('../models/Booking');
 
-// Create Parking Lot
+const ParkingLot = require("../models/ParkingLot");
+const Booking = require("../models/Booking");
+
+/**
+ * CREATE parking lot (manager-only)
+ */
 exports.createParkingLot = async (req, res) => {
   try {
-    const {
-      name,
-      location,
-      city,
-      pricePerHour,
-      capacity,
-      availableSlots,
-      amenities
-    } = req.body;
+    const managerId = req.user.id; // from auth middleware
 
-    if (!name || !location || !city || !pricePerHour || !capacity) {
-      return res.status(400).json({ message: 'name, location, city, pricePerHour and capacity are required' });
-    }
-
-    const lot = await ParkingLot.create({
-      name,
-      location,
-      city,
-      pricePerHour: Number(pricePerHour),
-      capacity: Number(capacity),
-      // if availableSlots not provided, set it equal to capacity
-      availableSlots: typeof availableSlots !== 'undefined' ? Number(availableSlots) : Number(capacity),
-      amenities: Array.isArray(amenities) ? amenities : (amenities ? String(amenities).split(',').map(a => a.trim()) : [])
+    const lot = new ParkingLot({
+      ...req.body,
+      manager: managerId,                      // ensure owner is this manager
+      availableSlots: req.body.capacity,       // initialize to capacity
     });
 
-    return res.status(201).json(lot);
-  } catch (error) {
-    console.error('createParkingLot error:', error);
-    return res.status(400).json({ message: error.message });
+    await lot.save();
+    res.status(201).json(lot);
+  } catch (err) {
+    console.error("createParkingLot error:", err);
+    res.status(500).json({ message: "Failed to create parking lot" });
   }
 };
 
-// Update Parking Lot
+/**
+ * UPDATE parking lot (manager can update ONLY their own)
+ */
 exports.updateParkingLot = async (req, res) => {
   try {
-    const updates = { ...req.body };
-    if (updates.pricePerHour) updates.pricePerHour = Number(updates.pricePerHour);
-    if (updates.capacity) updates.capacity = Number(updates.capacity);
-    if (typeof updates.availableSlots !== 'undefined') updates.availableSlots = Number(updates.availableSlots);
+    const managerId = req.user.id;
+    const { id } = req.params;
 
-    const parkingLot = await ParkingLot.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
-    if (!parkingLot) return res.status(404).json({ message: 'Parking lot not found' });
-    res.json(parkingLot);
-  } catch (error) {
-    console.error('updateParkingLot error:', error);
-    res.status(400).json({ message: error.message });
+    // ensure lot belongs to this manager
+    const lot = await ParkingLot.findOne({ _id: id, manager: managerId });
+    if (!lot) {
+      return res.status(404).json({ message: "Parking lot not found" });
+    }
+
+    Object.assign(lot, req.body);
+    await lot.save();
+
+    res.json(lot);
+  } catch (err) {
+    console.error("updateParkingLot error:", err);
+    res.status(500).json({ message: "Failed to update parking lot" });
   }
 };
 
-// Delete Parking Lot (and optionally related bookings)
+/**
+ * DELETE parking lot (manager can delete ONLY their own)
+ * Also deletes related bookings for their lots
+ */
 exports.deleteParkingLot = async (req, res) => {
   try {
-    const parkingLot = await ParkingLot.findByIdAndDelete(req.params.id);
-    if (!parkingLot) return res.status(404).json({ message: 'Parking lot not found' });
+    const managerId = req.user.id;
+    const { id } = req.params;
 
-    // Optional: delete bookings associated with this parking lot
-    await Booking.deleteMany({ parkingLot: parkingLot._id });
+    const lot = await ParkingLot.findOne({ _id: id, manager: managerId });
+    if (!lot) {
+      return res.status(404).json({ message: "Parking lot not found" });
+    }
 
-    res.json({ message: 'Parking lot deleted and related bookings removed' });
-  } catch (error) {
-    console.error('deleteParkingLot error:', error);
-    res.status(400).json({ message: error.message });
+    // delete related bookings for this lot owned by this manager
+    await Booking.deleteMany({ parkingLot: id, manager: managerId });
+
+    await lot.deleteOne();
+    res.json({ message: "Parking lot deleted" });
+  } catch (err) {
+    console.error("deleteParkingLot error:", err);
+    res.status(500).json({ message: "Failed to delete parking lot" });
   }
 };
 
-// View all bookings
+/**
+ * GET bookings for this manager's lots ONLY
+ */
 exports.getAllBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find()
-      .populate('user', 'name email')
-      .populate('parkingLot', 'name location city pricePerHour capacity availableSlots');
+    const managerId = req.user.id;
+
+    const bookings = await Booking.find({ manager: managerId })
+      .populate("user", "name email")
+      .populate(
+        "parkingLot",
+        "name location city pricePerHour capacity availableSlots"
+      );
+
     res.json(bookings);
   } catch (error) {
-    console.error('getAllBookings error:', error);
-    res.status(400).json({ message: error.message });
+    console.error("getAllBookings error:", error);
+    res.status(500).json({ message: "Failed to load bookings" });
   }
 };
 
-// GET all parking lots (admin)
+/**
+ * GET all parking lots belonging to this manager
+ * (if you also need a global admin version, create a separate controller)
+ */
 exports.getAllParkingLots = async (req, res) => {
   try {
-    const lots = await ParkingLot.find();
+    const managerId = req.user.id;
+    const lots = await ParkingLot.find({ manager: managerId });
     res.json(lots);
   } catch (error) {
-    console.error('getAllParkingLots error:', error);
-    res.status(400).json({ message: error.message });
+    console.error("getAllParkingLots error:", error);
+    res.status(500).json({ message: "Failed to load parking lots" });
   }
 };
 
-// DELETE booking (admin) — restores available slot
+/**
+ * DELETE booking (manager-only) — restores available slot
+ */
 exports.deleteBooking = async (req, res) => {
   try {
-    const booking = await Booking.findByIdAndDelete(req.params.id);
-    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+    const managerId = req.user.id;
 
-    // Restore available slot if parking lot exists
-    const parkingLot = await ParkingLot.findById(booking.parkingLot);
+    // only delete booking if it belongs to this manager
+    const booking = await Booking.findOneAndDelete({
+      _id: req.params.id,
+      manager: managerId,
+    });
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // restore available slot for that parking lot (if it's this manager's lot)
+    const parkingLot = await ParkingLot.findOne({
+      _id: booking.parkingLot,
+      manager: managerId,
+    });
+
     if (parkingLot) {
       parkingLot.availableSlots = (parkingLot.availableSlots || 0) + 1;
-      // ensure availableSlots doesn't exceed capacity
-      if (parkingLot.capacity && parkingLot.availableSlots > parkingLot.capacity) {
+
+      // do not exceed capacity
+      if (
+        parkingLot.capacity &&
+        parkingLot.availableSlots > parkingLot.capacity
+      ) {
         parkingLot.availableSlots = parkingLot.capacity;
       }
       await parkingLot.save();
     }
 
-    res.json({ message: 'Booking deleted and slot restored' });
+    res.json({ message: "Booking deleted and slot restored" });
   } catch (error) {
-    console.error('deleteBooking error:', error);
-    res.status(400).json({ message: error.message });
+    console.error("deleteBooking error:", error);
+    res.status(500).json({ message: "Failed to delete booking" });
   }
 };
 
-// CONFIRM booking (admin) — changes status to confirmed
+/**
+ * CONFIRM booking (manager-only) — changes status to confirmed
+ */
 exports.confirmBooking = async (req, res) => {
   try {
-    const booking = await Booking.findByIdAndUpdate(
-      req.params.id, 
-      { status: 'confirmed' }, 
+    const managerId = req.user.id;
+
+    // only confirm if booking belongs to this manager
+    const booking = await Booking.findOneAndUpdate(
+      { _id: req.params.id, manager: managerId },
+      { status: "confirmed" },
       { new: true, runValidators: true }
-    ).populate('user', 'name email').populate('parkingLot', 'name location city');
-    
-    if (!booking) return res.status(404).json({ message: 'Booking not found' });
-    
-    res.json({ message: 'Booking confirmed successfully', booking });
+    )
+      .populate("user", "name email")
+      .populate("parkingLot", "name location city");
+
+    if (!booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    res.json({ message: "Booking confirmed successfully", booking });
   } catch (error) {
-    console.error('confirmBooking error:', error);
-    res.status(400).json({ message: error.message });
+    console.error("confirmBooking error:", error);
+    res.status(500).json({ message: "Failed to confirm booking" });
   }
 };

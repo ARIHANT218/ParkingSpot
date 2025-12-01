@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from '../api/axios';
-import BookingChat from '../components/BookingChat'; // adjust path if different
+import BookingChat from './BookingChat'; // adjust path if different
 
 export default function ParkingDetails() {
   const { id } = useParams();
