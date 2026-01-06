@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from '../api/axios';
-import BookingChat from '../components/BookingChat'; // adjust path if different
+import BookingChat from '../components/BookingChat'; 
 
 export default function ParkingDetails() {
   const { id } = useParams();
@@ -13,9 +13,8 @@ export default function ParkingDetails() {
   const [loading, setLoading] = useState(false);
 
   const [currentUser, setCurrentUser] = useState(null);
-  const authToken = localStorage.getItem('token'); // adjust key if you store token under a different key
+  const authToken = localStorage.getItem('token'); 
 
-  // Fetch logged-in user (if token present)
   useEffect(() => {
     const fetchCurrentUser = async () => {
       if (!authToken) return;
@@ -27,21 +26,20 @@ export default function ParkingDetails() {
         console.log('Current user data:', res.data);
       } catch (err) {
         console.error('Failed to fetch current user', err);
-        // If token invalid you may want to clear it:
-        // localStorage.removeItem('token');
+       
       }
     };
     fetchCurrentUser();
   }, [authToken]);
 
-  // Fetch parking lot details (single lot by id if your API supports it)
+  
   const fetchParking = async () => {
     try {
-      // Try to fetch single parking if backend supports /parking/:id
+    
       const res = await axios.get(`/parking/${id}`);
       setParking(res.data);
     } catch (err) {
-      // Fallback: fetch all and find by id (keeps compatibility with earlier code)
+      console.error('Error fetching parking by ID', err);
       try {
         const res2 = await axios.get('/parking');
         const lot = Array.isArray(res2.data) ? res2.data.find(p => String(p._id) === String(id)) : null;
@@ -54,12 +52,11 @@ export default function ParkingDetails() {
 
   useEffect(() => {
     fetchParking();
-    // reset booking/message when visiting a different parking
+    
     setBooking(null);
     setMessage('');
   }, [id]);
 
-  // Fetch existing bookings for this parking lot and current user
   useEffect(() => {
     const fetchExistingBooking = async () => {
       if (!authToken || !currentUser) return;
@@ -67,7 +64,7 @@ export default function ParkingDetails() {
         const res = await axios.get('/parking/my-bookings', {
           headers: { Authorization: `Bearer ${authToken}` }
         });
-        // Find booking for this parking lot
+       
         const existingBooking = res.data.find(b => 
           String(b.parkingLot._id || b.parkingLot) === String(id)
         );
