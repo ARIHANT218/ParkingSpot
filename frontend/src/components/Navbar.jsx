@@ -40,7 +40,7 @@ export default function Navbar() {
           ) : (
             <>
               <Link to="/login" className="text-sm px-3 py-1 rounded hover:bg-slate-100 dark:hover:bg-sky-800 transition">Login</Link>
-              <Link to="/register" className="text-sm bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition">Register</Link>
+              <Link to="/signup" className="text-sm bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition">Register</Link>
             </>
           )}
         </div>

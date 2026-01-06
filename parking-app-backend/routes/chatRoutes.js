@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { protect } = require('../middleware/authMiddleware');
+const { protect, admin } = require('../middleware/authMiddleware');
 const { getMessages, sendMessage , markRead , adminActiveChats, testAdminChats } = require('../controllers/chatController');
 
 // sanity checks
@@ -12,15 +12,16 @@ if (typeof getMessages !== 'function' || typeof sendMessage !== 'function') {
   throw new Error('chatController exports are invalid — check ../controllers/chatController.js');
 }
 
-router.get('/:bookingId', protect, getMessages);
-router.post('/:bookingId', protect, sendMessage);
-
-router.patch('/:bookingId/read', protect, markRead);
-
+// IMPORTANT: Admin routes must come BEFORE dynamic routes to avoid route conflicts
 // admin-only
-router.get('/admin/active', protect, adminActiveChats);
+router.get('/admin/active', protect, admin, adminActiveChats);
 
 // test endpoint
-router.get('/test', testAdminChats);
+router.get('/test', protect, admin, testAdminChats);
+
+// Dynamic routes (must come after specific routes)
+router.get('/:bookingId', protect, getMessages);
+router.post('/:bookingId', protect, sendMessage);
+router.patch('/:bookingId/read', protect, markRead);
 
 module.exports = router;

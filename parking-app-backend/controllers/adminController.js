@@ -135,3 +135,126 @@ exports.confirmBooking = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+// Booking controller methods for bookingRoutes
+exports.createBooking = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'You must be logged in to book parking' });
+    }
+
+    const userId = req.user._id || req.user.id;
+    const { parkingLot, startTime, endTime } = req.body;
+
+    if (!parkingLot || !startTime || !endTime) {
+      return res.status(400).json({ message: 'parkingLot, startTime, and endTime are required' });
+    }
+
+    const parkingLotDoc = await ParkingLot.findById(parkingLot);
+    if (!parkingLotDoc) return res.status(404).json({ message: 'Parking lot not found' });
+
+    if (parkingLotDoc.availableSlots <= 0) {
+      return res.status(400).json({ message: 'No available slots' });
+    }
+
+    const booking = await Booking.create({
+      user: userId,
+      parkingLot: parkingLotDoc._id,
+      startTime,
+      endTime,
+      status: 'pending'
+    });
+
+    // Decrease available slots
+    parkingLotDoc.availableSlots -= 1;
+    await parkingLotDoc.save();
+
+    const populatedBooking = await Booking.findById(booking._id)
+      .populate('user', 'name email')
+      .populate('parkingLot', 'name location city pricePerHour');
+
+    res.status(201).json(populatedBooking);
+  } catch (error) {
+    console.error('createBooking error:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.getBookingById = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id)
+      .populate('user', 'name email')
+      .populate('parkingLot', 'name location city pricePerHour capacity availableSlots');
+
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+    // Check if user owns the booking or is admin
+    const userId = req.user._id || req.user.id;
+    if (booking.user._id.toString() !== userId.toString() && !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Not authorized to view this booking' });
+    }
+
+    res.json(booking);
+  } catch (error) {
+    console.error('getBookingById error:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.getBookingsByUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const currentUserId = req.user._id || req.user.id;
+
+    // Users can only view their own bookings unless they're admin
+    if (userId !== currentUserId.toString() && !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Not authorized to view these bookings' });
+    }
+
+    const bookings = await Booking.find({ user: userId })
+      .populate('parkingLot', 'name location city pricePerHour availableSlots')
+      .sort({ createdAt: -1 });
+
+    res.json(bookings);
+  } catch (error) {
+    console.error('getBookingsByUser error:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
+exports.cancelBooking = async (req, res) => {
+  try {
+    const booking = await Booking.findById(req.params.id).populate('parkingLot');
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+    const userId = req.user._id || req.user.id;
+    // Check if user owns the booking or is admin
+    if (booking.user.toString() !== userId.toString() && !req.user.isAdmin) {
+      return res.status(403).json({ message: 'Not authorized to cancel this booking' });
+    }
+
+    // Store original status before updating
+    const originalStatus = booking.status;
+
+    // Restore available slot if parking lot exists and booking was confirmed/pending
+    if (booking.parkingLot && (originalStatus === 'confirmed' || originalStatus === 'pending')) {
+      const parkingLot = await ParkingLot.findById(booking.parkingLot._id);
+      if (parkingLot) {
+        parkingLot.availableSlots = Math.min(
+          (parkingLot.availableSlots || 0) + 1,
+          parkingLot.capacity
+        );
+        await parkingLot.save();
+      }
+    }
+
+    // Update status instead of deleting
+    booking.status = 'cancelled';
+    await booking.save();
+
+    res.json({ message: 'Booking cancelled successfully', booking });
+  } catch (error) {
+    console.error('cancelBooking error:', error);
+    res.status(400).json({ message: error.message });
+  }
+};

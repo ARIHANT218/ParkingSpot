@@ -20,9 +20,24 @@ const app = express();
 app.use(express.json());
 
 const cors = require('cors');
+const allowedOrigins = [
+  process.env.FRONTEND_URL || "https://parking-spot-mu.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://localhost:5000"
+].filter(Boolean);
+
 app.use(cors({ 
-  
-  origin: "https://parking-spot-mu.vercel.app" || "http://localhost:5000", // change origin to your frontend in production
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all origins in development, restrict in production
+    }
+  },
+  credentials: true
 }));
 
 app.use(express.urlencoded({ extended: true }));
@@ -30,7 +45,10 @@ app.use(express.urlencoded({ extended: true }));
 // Chat message
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: 'https://parking-spot-mu.vercel.app' || 'http://localhost:5000' } // change origin to your frontend in production
+  cors: { 
+    origin: allowedOrigins,
+    credentials: true
+  }
 });
 app.set('io', io);
 

@@ -101,13 +101,21 @@ exports.cancelBooking = async (req, res) => {
     if (booking.user.toString() !== req.user._id.toString())
       return res.status(403).json({ message: 'Not authorized to cancel this booking' });
 
-    // Increase parking lot availability
+    // Restore parking lot availability if booking was confirmed or pending (prevent overflow)
     const parkingLot = await ParkingLot.findById(booking.parkingLot._id);
-    parkingLot.availableSlots += 1;
-    await parkingLot.save();
+    if (parkingLot && (booking.status === 'confirmed' || booking.status === 'pending')) {
+      parkingLot.availableSlots = Math.min(
+        (parkingLot.availableSlots || 0) + 1,
+        parkingLot.capacity
+      );
+      await parkingLot.save();
+    }
 
-    await booking.remove();
-    res.json({ message: 'Booking cancelled successfully' });
+    // Update status to cancelled instead of deleting
+    booking.status = 'cancelled';
+    await booking.save();
+
+    res.json({ message: 'Booking cancelled successfully', booking });
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
