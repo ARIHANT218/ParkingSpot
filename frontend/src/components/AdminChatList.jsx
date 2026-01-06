@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
-import api from '../api/axios'; // your axios instance (recommended to have baseURL: '/api')
+import api from '../api/axios'; 
 import BookingChat from './BookingChat';
 
 export default function AdminChatsList({ token }) {
@@ -16,14 +16,14 @@ export default function AdminChatsList({ token }) {
     try {
       console.log('Fetching admin chats — token:', token ? 'Present' : 'Missing');
 
-      // If you already attach token in an interceptor, you can call api.get('/chats/admin/active') without headers.
+     
       const res = await api.get('/chats/admin/active', {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
 
       console.log('Admin chats API response:', res.status, res.data);
 
-      // backend may return { results: [...] } or an array directly
+     
       const results = res.data?.results ?? res.data;
       setChats(Array.isArray(results) ? results : []);
     } catch (err) {
@@ -35,12 +35,12 @@ export default function AdminChatsList({ token }) {
     }
   }, [token]);
 
-  // initial fetch when token changes
+ 
   useEffect(() => {
     fetchActive();
   }, [fetchActive]);
 
-  // poll every 5s — clean up properly
+ 
   useEffect(() => {
     let mounted = true;
     const interval = setInterval(() => {
@@ -52,7 +52,7 @@ export default function AdminChatsList({ token }) {
     };
   }, [fetchActive]);
 
-  // listen for custom booking confirmation events
+ 
   useEffect(() => {
     const handleBookingConfirmed = () => {
       fetchActive();
@@ -64,7 +64,6 @@ export default function AdminChatsList({ token }) {
   const openChat = async (bookingId) => {
     setSelectedBookingId(bookingId);
 
-    // mark messages read for admin when opening the chat
     try {
       await api.patch(
         `/chats/${bookingId}/read`,
