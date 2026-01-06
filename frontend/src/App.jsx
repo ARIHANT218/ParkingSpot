@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
-import Register from './pages/Register';
+
+import Signup from './pages/Signup';
 import UserDashboard from './pages/UserDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ParkingDetails from './pages/ParkingDetails';
@@ -32,9 +33,12 @@ function App() {
         <Route path="/parking/:id" element={
           <ProtectedRoute>
             <ParkingDetails />
+            
 
           </ProtectedRoute>
         }/>
+
+        
         <Route path="/my-bookings" element={
           <ProtectedRoute>
             <UserBookings />
@@ -49,7 +53,7 @@ function App() {
           </ProtectedRoute>
         }/>
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/signup" element={<Signup />} />
       </Routes>
     </Router>
   );

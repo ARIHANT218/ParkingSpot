@@ -12,10 +12,10 @@ export default function Login() {
     try {
       const res = await axios.post('/users/login', { email, password });
 
-      // DEBUG: inspect response in console
+     
       console.log('login response:', res.data);
 
-      // store token
+     
       if (res.data?.token) {
         localStorage.setItem('token', res.data.token);
       }
@@ -41,10 +41,6 @@ export default function Login() {
         localStorage.setItem('role', 'user');
       }
 
-      // final debug prints
-      console.log('stored token:', localStorage.getItem('token'));
-      console.log('stored role:', localStorage.getItem('role'));
-
       navigate('/');
     } catch (err) {
       console.error('login error:', err.response || err);
@@ -55,7 +51,7 @@ export default function Login() {
   return (
     <div className="flex justify-center items-center h-screen bg-gray-100">
       <div className="bg-white p-8 rounded shadow w-96">
-        <h1 className="text-2xl font-bold mb-4">Login</h1>
+        <h1 className="text-2xl font-bold mb-4"> Login </h1>
         {message && <p className="text-red-500 mb-2">{message}</p>}
         <input
           type="email"

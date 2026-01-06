@@ -22,7 +22,7 @@ app.use(express.json());
 const cors = require('cors');
 app.use(cors({ 
   
-  origin: "https://parking-spot-mu.vercel.app",
+  origin: "https://parking-spot-mu.vercel.app" || "http://localhost:5000", // change origin to your frontend in production
 }));
 
 app.use(express.urlencoded({ extended: true }));
@@ -30,17 +30,16 @@ app.use(express.urlencoded({ extended: true }));
 // Chat message
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: 'https://parking-spot-mu.vercel.app' } // change origin to your frontend in production
+  cors: { origin: 'https://parking-spot-mu.vercel.app' || 'http://localhost:5000' } // change origin to your frontend in production
 });
 app.set('io', io);
 
-// Middleware-style auth for socket
 io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth?.token;
     if (!token) return next(new Error('Authentication error'));
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    socket.user = { id: payload.id, role: payload.role }; // adjust based on your token
+    socket.user = { id: payload.id, role: payload.role }; 
     return next();
   } catch (err) {
     return next(new Error('Authentication error'));
