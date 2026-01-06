@@ -13,25 +13,35 @@ exports.createParkingLot = async (req, res) => {
       pricePerHour,
       capacity,
       availableSlots,
-      amenities
+      amenities,
+      latitude,
+      longitude
     } = req.body;
 
     if (!name || !location || !city || !pricePerHour || !capacity) {
       return res.status(400).json({ message: 'name, location, city, pricePerHour and capacity are required' });
     }
 
+    // Set the current admin as the owner
+    const ownerId = req.user._id || req.user.id;
+
     const lot = await ParkingLot.create({
       name,
       location,
       city,
+      latitude: latitude ? Number(latitude) : undefined,
+      longitude: longitude ? Number(longitude) : undefined,
       pricePerHour: Number(pricePerHour),
       capacity: Number(capacity),
       // if availableSlots not provided, set it equal to capacity
       availableSlots: typeof availableSlots !== 'undefined' ? Number(availableSlots) : Number(capacity),
-      amenities: Array.isArray(amenities) ? amenities : (amenities ? String(amenities).split(',').map(a => a.trim()) : [])
+      amenities: Array.isArray(amenities) ? amenities : (amenities ? String(amenities).split(',').map(a => a.trim()) : []),
+      owner: ownerId
     });
 
-    return res.status(201).json(lot);
+    const populatedLot = await ParkingLot.findById(lot._id).populate('owner', 'name email');
+
+    return res.status(201).json(populatedLot);
   } catch (error) {
     console.error('createParkingLot error:', error);
     return res.status(400).json({ message: error.message });
@@ -41,14 +51,29 @@ exports.createParkingLot = async (req, res) => {
 // Update Parking Lot
 exports.updateParkingLot = async (req, res) => {
   try {
+    const parkingLot = await ParkingLot.findById(req.params.id);
+    if (!parkingLot) return res.status(404).json({ message: 'Parking lot not found' });
+
+    // Check ownership - only the owner can update
+    const ownerId = req.user._id || req.user.id;
+    if (parkingLot.owner.toString() !== ownerId.toString()) {
+      return res.status(403).json({ message: 'You can only update your own parking lots' });
+    }
+
     const updates = { ...req.body };
+    // Remove owner from updates to prevent ownership change
+    delete updates.owner;
+    
     if (updates.pricePerHour) updates.pricePerHour = Number(updates.pricePerHour);
     if (updates.capacity) updates.capacity = Number(updates.capacity);
     if (typeof updates.availableSlots !== 'undefined') updates.availableSlots = Number(updates.availableSlots);
+    if (updates.latitude) updates.latitude = Number(updates.latitude);
+    if (updates.longitude) updates.longitude = Number(updates.longitude);
 
-    const parkingLot = await ParkingLot.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
-    if (!parkingLot) return res.status(404).json({ message: 'Parking lot not found' });
-    res.json(parkingLot);
+    const updatedLot = await ParkingLot.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true })
+      .populate('owner', 'name email');
+    
+    res.json(updatedLot);
   } catch (error) {
     console.error('updateParkingLot error:', error);
     res.status(400).json({ message: error.message });
@@ -58,11 +83,19 @@ exports.updateParkingLot = async (req, res) => {
 // Delete Parking Lot (and optionally related bookings)
 exports.deleteParkingLot = async (req, res) => {
   try {
-    const parkingLot = await ParkingLot.findByIdAndDelete(req.params.id);
+    const parkingLot = await ParkingLot.findById(req.params.id);
     if (!parkingLot) return res.status(404).json({ message: 'Parking lot not found' });
 
-    // Optional: delete bookings associated with this parking lot
+    // Check ownership - only the owner can delete
+    const ownerId = req.user._id || req.user.id;
+    if (parkingLot.owner.toString() !== ownerId.toString()) {
+      return res.status(403).json({ message: 'You can only delete your own parking lots' });
+    }
+
+    // Delete bookings associated with this parking lot
     await Booking.deleteMany({ parkingLot: parkingLot._id });
+
+    await ParkingLot.findByIdAndDelete(req.params.id);
 
     res.json({ message: 'Parking lot deleted and related bookings removed' });
   } catch (error) {
@@ -71,12 +104,21 @@ exports.deleteParkingLot = async (req, res) => {
   }
 };
 
-// View all bookings
+// View all bookings - only returns bookings for parking lots owned by the current admin
 exports.getAllBookings = async (req, res) => {
   try {
-    const bookings = await Booking.find()
+    const ownerId = req.user._id || req.user.id;
+    
+    // First, get all parking lots owned by this admin
+    const ownedParkingLots = await ParkingLot.find({ owner: ownerId }).select('_id');
+    const parkingLotIds = ownedParkingLots.map(lot => lot._id);
+    
+    // Then, get bookings for those parking lots only
+    const bookings = await Booking.find({ parkingLot: { $in: parkingLotIds } })
       .populate('user', 'name email')
-      .populate('parkingLot', 'name location city pricePerHour capacity availableSlots');
+      .populate('parkingLot', 'name location city pricePerHour capacity availableSlots')
+      .sort({ createdAt: -1 });
+    
     res.json(bookings);
   } catch (error) {
     console.error('getAllBookings error:', error);
@@ -84,10 +126,13 @@ exports.getAllBookings = async (req, res) => {
   }
 };
 
-// GET all parking lots (admin)
+// GET all parking lots (admin) - only returns parking lots owned by the current admin
 exports.getAllParkingLots = async (req, res) => {
   try {
-    const lots = await ParkingLot.find();
+    const ownerId = req.user._id || req.user.id;
+    const lots = await ParkingLot.find({ owner: ownerId })
+      .populate('owner', 'name email')
+      .sort({ createdAt: -1 });
     res.json(lots);
   } catch (error) {
     console.error('getAllParkingLots error:', error);
@@ -95,22 +140,30 @@ exports.getAllParkingLots = async (req, res) => {
   }
 };
 
-// DELETE booking (admin) — restores available slot
+// DELETE booking (admin) — restores available slot (only for own parking lots)
 exports.deleteBooking = async (req, res) => {
   try {
-    const booking = await Booking.findByIdAndDelete(req.params.id);
+    const booking = await Booking.findById(req.params.id).populate('parkingLot');
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
-    // Restore available slot if parking lot exists
-    const parkingLot = await ParkingLot.findById(booking.parkingLot);
-    if (parkingLot) {
-      parkingLot.availableSlots = (parkingLot.availableSlots || 0) + 1;
-      // ensure availableSlots doesn't exceed capacity
-      if (parkingLot.capacity && parkingLot.availableSlots > parkingLot.capacity) {
-        parkingLot.availableSlots = parkingLot.capacity;
-      }
-      await parkingLot.save();
+    // Check if the parking lot belongs to the current admin
+    const ownerId = req.user._id || req.user.id;
+    const parkingLot = await ParkingLot.findById(booking.parkingLot._id || booking.parkingLot);
+    if (!parkingLot) return res.status(404).json({ message: 'Parking lot not found' });
+    
+    if (parkingLot.owner.toString() !== ownerId.toString()) {
+      return res.status(403).json({ message: 'You can only delete bookings for your own parking lots' });
     }
+
+    // Restore available slot if parking lot exists
+    parkingLot.availableSlots = (parkingLot.availableSlots || 0) + 1;
+    // ensure availableSlots doesn't exceed capacity
+    if (parkingLot.capacity && parkingLot.availableSlots > parkingLot.capacity) {
+      parkingLot.availableSlots = parkingLot.capacity;
+    }
+    await parkingLot.save();
+
+    await Booking.findByIdAndDelete(req.params.id);
 
     res.json({ message: 'Booking deleted and slot restored' });
   } catch (error) {
@@ -119,18 +172,28 @@ exports.deleteBooking = async (req, res) => {
   }
 };
 
-// CONFIRM booking (admin) — changes status to confirmed
+// CONFIRM booking (admin) — changes status to confirmed (only for own parking lots)
 exports.confirmBooking = async (req, res) => {
   try {
-    const booking = await Booking.findByIdAndUpdate(
+    const booking = await Booking.findById(req.params.id).populate('parkingLot');
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+
+    // Check if the parking lot belongs to the current admin
+    const ownerId = req.user._id || req.user.id;
+    const parkingLot = await ParkingLot.findById(booking.parkingLot._id || booking.parkingLot);
+    if (!parkingLot) return res.status(404).json({ message: 'Parking lot not found' });
+    
+    if (parkingLot.owner.toString() !== ownerId.toString()) {
+      return res.status(403).json({ message: 'You can only confirm bookings for your own parking lots' });
+    }
+
+    const updatedBooking = await Booking.findByIdAndUpdate(
       req.params.id, 
       { status: 'confirmed' }, 
       { new: true, runValidators: true }
     ).populate('user', 'name email').populate('parkingLot', 'name location city');
     
-    if (!booking) return res.status(404).json({ message: 'Booking not found' });
-    
-    res.json({ message: 'Booking confirmed successfully', booking });
+    res.json({ message: 'Booking confirmed successfully', booking: updatedBooking });
   } catch (error) {
     console.error('confirmBooking error:', error);
     res.status(400).json({ message: error.message });

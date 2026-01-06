@@ -10,7 +10,8 @@ const parkingLotSchema = new mongoose.Schema({
   capacity: { type: Number, required: true },
   availableSlots: { type: Number, required: true },
   amenities: [String],
-  rating: { type: Number, default: 0 }
-});
+  rating: { type: Number, default: 0 },
+  owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true } // Admin who owns this parking lot
+}, { timestamps: true });
 
 module.exports = mongoose.model('ParkingLot', parkingLotSchema);

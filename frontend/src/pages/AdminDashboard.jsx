@@ -251,8 +251,25 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage parking lots, bookings, and customer support</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">My Admin Dashboard</h1>
+              <p className="text-gray-600 dark:text-gray-400">Manage your parking lots, bookings, and customer support</p>
+            </div>
+            <div className="bg-purple-100 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800 rounded-lg px-4 py-2">
+              <p className="text-sm text-purple-700 dark:text-purple-300 font-medium">
+                <svg className="h-4 w-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                Private Dashboard
+              </p>
+            </div>
+          </div>
+          <div className="mt-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              <strong>Note:</strong> You can only view and manage parking lots that you created. Other admins cannot modify your parking spaces.
+            </p>
+          </div>
         </header>
 
         {/* messages */}
@@ -441,8 +458,8 @@ export default function AdminDashboard() {
           {/* Parking lots list */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Existing Parking Lots</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">Manage your parking locations</p>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">My Parking Lots</h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Manage your parking locations (only your own)</p>
             </div>
 
             {loadingLots ? (
@@ -567,8 +584,8 @@ export default function AdminDashboard() {
         {/* Bookings */}
         <div className="mt-8 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-6">
           <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">All Bookings</h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Manage customer reservations</p>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">My Bookings</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Manage bookings for your parking lots only</p>
           </div>
           {loadingBookings ? (
             <div className="flex justify-center items-center py-12">

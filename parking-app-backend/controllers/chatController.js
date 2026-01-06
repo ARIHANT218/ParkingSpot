@@ -81,8 +81,18 @@ async function adminActiveChats(req, res) {
       return res.status(403).json({ message: 'Not authorized' });
     }
 
-    // find confirmed bookings (you can expand statuses if needed)
-    const confirmedBookings = await Booking.find({ status: 'confirmed' })
+    const ParkingLot = require('../models/ParkingLot');
+    const ownerId = req.user.id || req.user._id;
+
+    // First, get all parking lots owned by this admin
+    const ownedParkingLots = await ParkingLot.find({ owner: ownerId }).select('_id').lean();
+    const parkingLotIds = ownedParkingLots.map(lot => lot._id);
+
+    // find confirmed bookings only for parking lots owned by this admin
+    const confirmedBookings = await Booking.find({ 
+      status: 'confirmed',
+      parkingLot: { $in: parkingLotIds }
+    })
       .populate('user', 'name email')
       .populate('parkingLot', 'name location city')
       .sort({ createdAt: -1 })
