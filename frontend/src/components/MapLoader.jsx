@@ -1,4 +1,4 @@
-// src/components/MapLoader.jsx
+
 import React from 'react';
 import { useJsApiLoader } from '@react-google-maps/api';
 

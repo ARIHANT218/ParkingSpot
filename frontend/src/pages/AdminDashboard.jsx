@@ -1,22 +1,8 @@
-// src/pages/AdminDashboard.jsx
+
 import { useEffect, useState, useRef } from 'react';
 import axios from '../api/axios';
 import AdminChatsList from '../components/AdminChatList';
 
-/**
- * Admin Dashboard
- * - Lists parking lots (GET /admin/parking-lots)
- * - Add parking lot (POST /admin/parking-lot)
- * - Edit parking lot inline (PUT /admin/parking-lot/:id)
- * - Delete parking lot (DELETE /admin/parking-lot/:id)
- * - List bookings (GET /admin/bookings)
- * - Delete booking (DELETE /admin/bookings/:id) - backend restores slot
- *
- * IMPORTANT:
- * - This component calls useJsApiLoader({ libraries: ['places'] }).
- *   Ensure you DO NOT call useJsApiLoader elsewhere with different options,
- *   or create a single MapLoader wrapper and use it across the app.
- */
 
 const MAP_LIBRARIES = ['places'];
 

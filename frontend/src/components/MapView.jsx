@@ -1,9 +1,4 @@
 import React from 'react';
-
-/**
- * MapView stub — removes Google Maps dependency.
- * Returns a harmless placeholder. Use this where maps were used before.
- */
 export default function MapView({ markers = [], height = '280px' }) {
   return (
     <div style={{ minHeight: height }}>

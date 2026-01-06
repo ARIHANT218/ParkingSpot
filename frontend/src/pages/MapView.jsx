@@ -1,4 +1,4 @@
-// src/pages/MapView.jsx
+
 import { useEffect, useState } from "react";
 import { GoogleMap, Marker, InfoWindow } from "@react-google-maps/api";
 import axios from "../api/axios";

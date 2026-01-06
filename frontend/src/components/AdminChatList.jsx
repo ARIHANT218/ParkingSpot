@@ -1,4 +1,4 @@
-// src/components/AdminChatsList.jsx
+
 import React, { useEffect, useState, useCallback } from 'react';
 import api from '../api/axios'; // your axios instance (recommended to have baseURL: '/api')
 import BookingChat from './BookingChat';
