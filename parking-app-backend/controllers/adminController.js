@@ -1,6 +1,7 @@
 // controllers/adminController.js
 const ParkingLot = require('../models/ParkingLot');
 const Booking = require('../models/Booking');
+const User = require('../models/user');
 
 // Create Parking Lot
 exports.createParkingLot = async (req, res) => {
@@ -255,6 +256,46 @@ exports.cancelBooking = async (req, res) => {
     res.json({ message: 'Booking cancelled successfully', booking });
   } catch (error) {
     console.error('cancelBooking error:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// Get all users (admin only)
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    res.json(users);
+  } catch (error) {
+    console.error('getAllUsers error:', error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
+// Promote user to admin or demote admin to user
+exports.updateUserRole = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { isAdmin } = req.body;
+
+    // Prevent self-demotion (optional security feature)
+    if (userId === req.user._id.toString() && isAdmin === false) {
+      return res.status(400).json({ message: 'You cannot demote yourself' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { isAdmin: Boolean(isAdmin) },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.json({
+      message: `User ${isAdmin ? 'promoted to admin' : 'demoted to regular user'} successfully`,
+      user
+    });
+  } catch (error) {
+    console.error('updateUserRole error:', error);
     res.status(400).json({ message: error.message });
   }
 };

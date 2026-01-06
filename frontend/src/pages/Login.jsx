@@ -22,14 +22,17 @@ export default function Login() {
       }
 
       // store role: prefer explicit field, else try to decode token payload
+      let userRole = 'user';
       if (res.data?.role) {
-        localStorage.setItem('role', res.data.role);
+        userRole = res.data.role;
+        localStorage.setItem('role', userRole);
       } else if (res.data?.token) {
         try {
           const payload = JSON.parse(atob(res.data.token.split('.')[1]));
           const roleFromToken = payload.role || payload?.role === 'admin' ? payload.role : null;
           if (roleFromToken) {
-            localStorage.setItem('role', roleFromToken);
+            userRole = roleFromToken;
+            localStorage.setItem('role', userRole);
           } else {
             localStorage.setItem('role', 'user');
           }
@@ -41,7 +44,12 @@ export default function Login() {
         localStorage.setItem('role', 'user');
       }
 
-      navigate('/');
+      // Navigate based on role
+      if (userRole === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       console.error('login error:', err.response || err);
       setMessage(err.response?.data?.message || 'Login failed. Please check your credentials.');

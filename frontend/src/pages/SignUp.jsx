@@ -7,6 +7,7 @@ export default function SignUp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [adminCode, setAdminCode] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -28,17 +29,20 @@ export default function SignUp() {
 
     setLoading(true);
     try {
-      const res = await axios.post('/users/register', { name, email, password });
+      const res = await axios.post('/users/register', { 
+        name, 
+        email, 
+        password, 
+        adminCode: adminCode.trim() || undefined 
+      });
 
       const data = res.data;
       if (data?.token) {
         localStorage.setItem('token', data.token);
       }
 
-      // prefer explicit role field, fallback to token payload
-      if (data?.user?.role) {
-        localStorage.setItem('role', data.user.role);
-      } else if (data?.role) {
+      // Store role from response
+      if (data?.role) {
         localStorage.setItem('role', data.role);
       } else if (data?.token) {
         try {
@@ -49,7 +53,25 @@ export default function SignUp() {
         }
       }
 
-      navigate('/');
+      // Show success message
+      if (data?.message) {
+        setMessage(data.message);
+        setTimeout(() => {
+          // Navigate based on role
+          if (data.role === 'admin') {
+            navigate('/admin');
+          } else {
+            navigate('/');
+          }
+        }, 1500);
+      } else {
+        // Navigate based on role
+        if (data.role === 'admin') {
+          navigate('/admin');
+        } else {
+          navigate('/');
+        }
+      }
     } catch (err) {
       console.error('signup error:', err.response || err);
       setMessage(err.response?.data?.message || 'Signup failed. Please try again.');
@@ -143,11 +165,34 @@ export default function SignUp() {
               />
             </div>
 
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-              <p className="text-xs text-blue-700 dark:text-blue-300">
-                <strong>Note:</strong> All users register as regular users. Admin access must be granted by system administrator.
+            <div>
+              <label htmlFor="adminCode" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Admin Code <span className="text-gray-500 font-normal">(Optional)</span>
+              </label>
+              <input
+                id="adminCode"
+                type="text"
+                placeholder="Enter admin code to create admin account"
+                value={adminCode}
+                onChange={e => setAdminCode(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition"
+                disabled={loading}
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Leave blank to create a regular user account. Enter the admin code to create an admin account.
               </p>
             </div>
+
+            {adminCode && (
+              <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-lg p-3">
+                <p className="text-xs text-purple-700 dark:text-purple-300 flex items-center">
+                  <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <strong>Admin Mode:</strong> If the code is correct, you will be registered as an admin.
+                </p>
+              </div>
+            )}
 
             <button
               type="submit"

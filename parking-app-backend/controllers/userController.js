@@ -8,13 +8,21 @@ const generateToken = (id, role) => jwt.sign({ id, role }, process.env.JWT_SECRE
 
 exports.registerUser = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, adminCode } = req.body;
     const userExists = await User.findOne({ email });
     if (userExists) return res.status(400).json({ message: 'User already exists' });
 
-    // Only allow 'user' role for registration (admin must be set manually)
-    // Ignore any other role values from frontend for security
-    const user = await User.create({ name, email, password, isAdmin: false });
+    // Check if admin code is provided and matches "arihantcode"
+    const ADMIN_CODE = 'arihantcode';
+    const isAdmin = adminCode && adminCode.trim().toLowerCase() === ADMIN_CODE.toLowerCase();
+
+    // Create user with admin status based on code
+    const user = await User.create({ 
+      name, 
+      email, 
+      password, 
+      isAdmin: isAdmin 
+    });
 
     const userRole = user.isAdmin ? 'admin' : 'user';
     const token = generateToken(user._id, userRole);
@@ -24,7 +32,8 @@ exports.registerUser = async (req, res) => {
       name: user.name,
       email: user.email,
       token,
-      role: userRole
+      role: userRole,
+      message: isAdmin ? 'Admin account created successfully' : 'User account created successfully'
     });
   } catch (error) {
     console.error('registerUser error:', error);

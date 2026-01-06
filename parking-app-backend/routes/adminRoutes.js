@@ -9,7 +9,9 @@ const {
   getAllBookings,
   getAllParkingLots,
   deleteBooking,
-  confirmBooking
+  confirmBooking,
+  getAllUsers,
+  updateUserRole
 } = require('../controllers/adminController');
 
 // Create a parking lot
@@ -32,5 +34,11 @@ router.delete('/bookings/:id', protect, admin, deleteBooking);
 
 // Confirm a booking (admin)
 router.patch('/bookings/:id/confirm', protect, admin, confirmBooking);
+
+// Get all users (admin only)
+router.get('/users', protect, admin, getAllUsers);
+
+// Update user role (promote/demote)
+router.patch('/users/:userId/role', protect, admin, updateUserRole);
 
 module.exports = router;
