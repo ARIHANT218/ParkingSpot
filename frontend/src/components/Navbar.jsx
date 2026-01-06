@@ -28,8 +28,7 @@ export default function Navbar() {
             <Link to="/admin" className="text-sm hover:underline">Admin Dashboard</Link>
 
           )}
-                {/* Map */}
-          <Link to="/map" className="text-sm hover:underline">Map</Link>
+               
            
         </div>
 
