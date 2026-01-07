@@ -102,18 +102,21 @@ export default function BookingChat({ bookingId, token }) {
 
    
     return () => {
-      try {
-        socket.off('connect');
-        socket.off('disconnect');
-        socket.off('joinError');
-        socket.off('sendError');
-        socket.off('newMessage');
-        socket.off('error');
-      } catch (error) 
-      socket.disconnect();
-      socketRef.current = null;
-      setConnected(false);
-    };
+  try {
+    socket.off('connect');
+    socket.off('disconnect');
+    socket.off('joinError');
+    socket.off('sendError');
+    socket.off('newMessage');
+    socket.off('error');
+  } catch (error) {
+    console.error('Socket cleanup error:', error);
+  }
+
+  socket.disconnect();
+  socketRef.current = null;
+  setConnected(false);
+};
   }, [bookingId, token]);
 
  
