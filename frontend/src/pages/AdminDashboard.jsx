@@ -1,10 +1,9 @@
-
 import { useEffect, useState } from 'react';
 import axios from '../api/axios';
 import AdminChatsList from '../components/AdminChatList';
 
 export default function AdminDashboard() {
-  // data
+  
   const [parkingLots, setParkingLots] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [users, setUsers] = useState([]);
@@ -15,20 +14,22 @@ export default function AdminDashboard() {
   const [city, setCity] = useState('');
   const [price, setPrice] = useState('');
   const [capacity, setCapacity] = useState('');
-  const [amenities, setAmenities] = useState(''); // comma-separated
+  const [amenities, setAmenities] = useState('');
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
 
-  // UI states
+ 
   const [loadingLots, setLoadingLots] = useState(false);
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+
   // editing
   const [editingId, setEditingId] = useState(null);
   const [editValues, setEditValues] = useState({});
+
 
   // Fetch parking lots
   const fetchParkingLots = async () => {
@@ -126,7 +127,7 @@ export default function AdminDashboard() {
       setAmenities('');
       setLatitude('');
       setLongitude('');
-      // refresh lists
+      
       await fetchParkingLots();
     } catch (err) {
       console.error('add parking error', err);
@@ -173,7 +174,7 @@ export default function AdminDashboard() {
     setEditValues({});
   };
 
-  // Save edited lot
+  
   const saveEdit = async (id) => {
     setError('');
     setSuccessMsg('');
@@ -224,7 +225,7 @@ export default function AdminDashboard() {
       await axios.patch(`/admin/bookings/${id}/confirm`);
       setSuccessMsg('Booking confirmed successfully. Chat is now available!');
       await fetchBookings();
-      // Force refresh of chat list by triggering a re-render
+      
       window.dispatchEvent(new Event('bookingConfirmed'));
     } catch (err) {
       console.error('confirm booking error', err);
@@ -232,7 +233,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // Update user role (promote/demote)
+  
   const handleUpdateUserRole = async (userId, isAdmin) => {
     setError('');
     setSuccessMsg('');

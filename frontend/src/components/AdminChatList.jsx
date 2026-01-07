@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useCallback } from 'react';
 import api from '../api/axios'; 
 import BookingChat from './BookingChat';
@@ -9,7 +8,7 @@ export default function AdminChatsList({ token }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // stable fetch function
+  
   const fetchActive = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -104,12 +103,12 @@ export default function AdminChatsList({ token }) {
           {chats.map((c, idx) => {
             const bookingId = c.bookingId ?? c.booking?._id ?? String(idx);
             const userName = c.booking?.user?.name ?? c.booking?.user?.email ?? 'User';
-            // lastMessage might be an object or a string
+           
             const lastMessageText =
               (c.lastMessage && typeof c.lastMessage === 'object' && c.lastMessage.text) ||
               (typeof c.lastMessage === 'string' && c.lastMessage) ||
               'No messages';
-            // unreadForAdmin might be a count or a boolean
+           
             const unreadCount =
               typeof c.unreadForAdmin === 'number'
                 ? c.unreadForAdmin

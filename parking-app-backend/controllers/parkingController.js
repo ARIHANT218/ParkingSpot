@@ -3,26 +3,28 @@ const Booking = require('../models/Booking');
 const Review = require('../models/Review');
 const QRCode = require('qrcode');
 
-// ------------------ Get Parking Lots ------------------
 exports.getParkingLots = async (req, res) => {
   try {
     const { city } = req.query;
-    const query = city ? { city: { $regex: city, $options: 'i' } } : {};
-    const parkingLots = await ParkingLot.find(query);
+
+    const filter = city
+      ? { city: { $regex: city, $options: 'i' } }
+      : {};
+
+    const parkingLots = await ParkingLot.find(filter);
     res.json(parkingLots);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
-// controllers/adminController.js (bookParking)
+
 exports.bookParking = async (req, res) => {
   try {
-    // Defensive checks
     if (!req.user) {
       return res.status(401).json({ message: 'You must be logged in to book parking' });
     }
 
-    const userId = req.user._id || req.user.id; // support both shapes
+    const userId = req.user._id || req.user.id;
     const userName = req.user.name || req.user.fullName || 'User';
 
     const parkingLot = await ParkingLot.findById(req.params.id);
@@ -34,20 +36,21 @@ exports.bookParking = async (req, res) => {
       return res.status(400).json({ message: 'No available slots' });
     }
 
+    // Create booking
     const booking = await Booking.create({
       user: userId,
       parkingLot: parkingLot._id,
       startTime,
-      endTime
+      endTime,
+      status: 'pending'
     });
 
-    // Generate QR code for booking
+    // Generate QR code
     const qrData = `BookingID:${booking._id} User:${userName} ParkingLot:${parkingLot.name}`;
-    const qrCode = await QRCode.toDataURL(qrData);
-    booking.qrCode = qrCode;
+    booking.qrCode = await QRCode.toDataURL(qrData);
     await booking.save();
 
-    // Decrease available slots
+    
     parkingLot.availableSlots -= 1;
     await parkingLot.save();
 
@@ -58,31 +61,32 @@ exports.bookParking = async (req, res) => {
   }
 };
 
-// ------------------ Get User's Bookings ------------------
-// getMyBookings
 exports.getMyBookings = async (req, res) => {
   try {
     if (!req.user) return res.status(401).json({ message: 'Not authorized' });
+
     const userId = req.user._id || req.user.id;
+
     const bookings = await Booking.find({ user: userId })
-      .populate('parkingLot', 'name location city pricePerHour availableSlots');
+      .populate('parkingLot', 'name location city pricePerHour availableSlots')
+      .sort({ createdAt: -1 });
+
     res.json(bookings);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 };
 
-// ------------------ Edit Booking ------------------
 exports.editBooking = async (req, res) => {
   try {
     const { startTime, endTime } = req.body;
-    const booking = await Booking.findById(req.params.id).populate('parkingLot');
+    const booking = await Booking.findById(req.params.id);
 
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
-    if (booking.user.toString() !== req.user._id.toString())
+    if (booking.user.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not authorized to edit this booking' });
+    }
 
-    // Update booking times
     booking.startTime = startTime || booking.startTime;
     booking.endTime = endTime || booking.endTime;
 
@@ -93,25 +97,24 @@ exports.editBooking = async (req, res) => {
   }
 };
 
-// ------------------ Cancel Booking ------------------
 exports.cancelBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id).populate('parkingLot');
-    if (!booking) return res.status(404).json({ message: 'Booking not found' });
-    if (booking.user.toString() !== req.user._id.toString())
-      return res.status(403).json({ message: 'Not authorized to cancel this booking' });
 
-    // Restore parking lot availability if booking was confirmed or pending (prevent overflow)
-    const parkingLot = await ParkingLot.findById(booking.parkingLot._id);
-    if (parkingLot && (booking.status === 'confirmed' || booking.status === 'pending')) {
-      parkingLot.availableSlots = Math.min(
-        (parkingLot.availableSlots || 0) + 1,
-        parkingLot.capacity
-      );
-      await parkingLot.save();
+    if (!booking) return res.status(404).json({ message: 'Booking not found' });
+    if (booking.user.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to cancel this booking' });
     }
 
-    // Update status to cancelled instead of deleting
+    // Restore slot if booking was active
+    if (booking.parkingLot && ['pending', 'confirmed'].includes(booking.status)) {
+      const lot = await ParkingLot.findById(booking.parkingLot._id);
+      if (lot) {
+        lot.availableSlots = Math.min((lot.availableSlots || 0) + 1, lot.capacity);
+        await lot.save();
+      }
+    }
+
     booking.status = 'cancelled';
     await booking.save();
 
@@ -121,15 +124,22 @@ exports.cancelBooking = async (req, res) => {
   }
 };
 
-// ------------------ Add Review ------------------
 exports.addReview = async (req, res) => {
   try {
     const { rating, comment } = req.body;
+
     const parkingLot = await ParkingLot.findById(req.params.id);
     if (!parkingLot) return res.status(404).json({ message: 'Parking lot not found' });
 
-    const alreadyReviewed = await Review.findOne({ user: req.user._id, parkingLot: parkingLot._id });
-    if (alreadyReviewed) return res.status(400).json({ message: 'You have already reviewed this parking lot' });
+    // Prevent duplicate reviews
+    const alreadyReviewed = await Review.findOne({
+      user: req.user._id,
+      parkingLot: parkingLot._id
+    });
+
+    if (alreadyReviewed) {
+      return res.status(400).json({ message: 'You have already reviewed this parking lot' });
+    }
 
     const review = await Review.create({
       user: req.user._id,
@@ -138,9 +148,11 @@ exports.addReview = async (req, res) => {
       comment
     });
 
-    // Update parking lot rating dynamically
+
     const reviews = await Review.find({ parkingLot: parkingLot._id });
-    const avgRating = reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length;
+    const avgRating =
+      reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+
     parkingLot.rating = avgRating;
     await parkingLot.save();
 

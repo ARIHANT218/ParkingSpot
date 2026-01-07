@@ -1,130 +1,104 @@
 const express = require('express');
 const dotenv = require('dotenv');
-const connectDB = require('./config/db');
 const http = require('http');
-const { canAcessChat } = require('./utils/chatAuth');
-
-const { Server } = require('socket.io');
+const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const { Server } = require('socket.io');
+
+const connectDB = require('./config/db');
+const { canAcessChat } = require('./utils/chatAuth');
 const Message = require('./models/Message');
-const Booking = require('./models/Booking');
-const User = require('./models/user');
-const authMiddleware = require('./middleware/authMiddleware'); // existing
 
 dotenv.config();
 connectDB();
 
 const app = express();
-
-
 app.use(express.json());
 
-const cors = require('cors');
+
 const allowedOrigins = [
-  process.env.FRONTEND_URL || "https://parking-spot-mu.vercel.app",
+  process.env.FRONTEND_URL,
   "http://localhost:5173",
   "http://localhost:3000",
-  "http://localhost:5000"
 ].filter(Boolean);
 
-app.use(cors({ 
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(null, true); // Allow all origins in development, restrict in production
-    }
-  },
+app.use(cors({
+  origin: allowedOrigins,
   credentials: true
 }));
 
-app.use(express.urlencoded({ extended: true }));
-
-// Chat message
+/* -------------------- SERVER -------------------- */
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { 
-    origin: allowedOrigins,
-    credentials: true
-  }
+  cors: { origin: allowedOrigins, credentials: true }
 });
+
 app.set('io', io);
 
-io.use(async (socket, next) => {
+/* -------------------- SOCKET AUTH -------------------- */
+io.use((socket, next) => {
   try {
     const token = socket.handshake.auth?.token;
-    if (!token) return next(new Error('Authentication error'));
+    if (!token) throw new Error('No token');
+
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    socket.user = { id: payload.id, role: payload.role }; 
-    return next();
-  } catch (err) {
-    return next(new Error('Authentication error'));
+    socket.user = { id: payload.id, role: payload.role };
+    next();
+  } catch {
+    next(new Error('Authentication failed'));
   }
 });
 
 
+/* -------------------- SOCKET EVENTS -------------------- */
 io.on('connection', (socket) => {
-  console.log('Socket connected', socket.user.id);
+  console.log('User connected:', socket.user.id);
 
+  
   socket.on('joinRoom', async ({ bookingId }) => {
-    console.log('joinRoom request:', { bookingId, userId: socket.user.id });
     try {
-      const { ok, booking, reason } = await canAcessChat(socket.user, bookingId);
-      console.log('canAcessChat result:', { ok, reason, bookingStatus: booking?.status });
-      if (!ok) {
-        socket.emit('joinError', { message: reason });
-        return;
-      }
-      const room = `booking_${bookingId}`;
-      socket.join(room);
-      console.log('User joined room:', room);
+      const { ok, reason } = await canAcessChat(socket.user, bookingId);
+      if (!ok) return socket.emit('joinError', { message: reason });
+
+      socket.join(`booking_${bookingId}`);
       socket.emit('joined', { bookingId });
-    } catch (err) {
-      console.error('joinRoom error', err);
-      socket.emit('joinError', { message: 'Server error joining room' });
+    } catch {
+      socket.emit('joinError', { message: 'Failed to join room' });
     }
   });
 
+  // Send message
   socket.on('sendMessage', async ({ bookingId, text }) => {
-    console.log('sendMessage request:', { bookingId, text, userId: socket.user.id });
     try {
-      const { ok, booking, reason } = await canAcessChat(socket.user, bookingId);
-      if (!ok) {
-        console.log('sendMessage access denied:', reason);
-        socket.emit('sendError', { message: reason });
-        return;
-      }
+      const { ok, reason } = await canAcessChat(socket.user, bookingId);
+      if (!ok) return socket.emit('sendError', { message: reason });
 
-      const msg = await Message.create({
+      const message = await Message.create({
         bookingId,
         sender: socket.user.id,
         senderRole: socket.user.role || 'user',
         text,
       });
 
-      console.log('Message created:', msg);
-      const room = `booking_${bookingId}`;
-      io.to(room).emit('newMessage', msg);
-      console.log('Message broadcasted to room:', room);
-    } catch (err) {
-      console.error('sendMessage error:', err);
-      socket.emit('sendError', { message: 'Unable to send message' });
+      io.to(`booking_${bookingId}`).emit('newMessage', message);
+    } catch {
+      socket.emit('sendError', { message: 'Message not sent' });
     }
   });
 
-
-
   socket.on('disconnect', () => {
-    console.log('Socket disconnected', socket.user?.id);
+    console.log('User disconnected:', socket.user?.id);
   });
 });
 
+//-------------------- ROUTES -------------------- //
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/parking', require('./routes/parkingRoutes'));
 app.use('/api/chats', require('./routes/chatRoutes'));
 
+
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => console.log(`Server running on ${PORT}`));
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

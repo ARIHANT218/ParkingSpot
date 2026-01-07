@@ -1,4 +1,3 @@
-// src/api/axios.js
 import axios from 'axios';
 const baseURL = import.meta.env.VITE_APP_API_URL || "http://localhost:5000";
 const instance = axios.create({
@@ -9,13 +8,12 @@ const instance = axios.create({
   },
 });
 
-// Add token to headers (safe access to localStorage)
 instance.interceptors.request.use(
   (config) => {
     try {
-      // Guard for environments where window/localStorage may be undefined
+      
       if (typeof window !== 'undefined' && window.localStorage) {
-        const token = localStorage.getItem('token'); // change key if your app uses a different key
+        const token = localStorage.getItem('token'); 
         if (token) {
           config.headers = config.headers || {};
           config.headers.Authorization = `Bearer ${token}`;

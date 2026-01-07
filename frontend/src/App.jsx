@@ -33,8 +33,6 @@ function App() {
         <Route path="/parking/:id" element={
           <ProtectedRoute>
             <ParkingDetails />
-            
-
           </ProtectedRoute>
         }/>
 
@@ -42,14 +40,12 @@ function App() {
         <Route path="/my-bookings" element={
           <ProtectedRoute>
             <UserBookings />
-
           </ProtectedRoute>
         }/>
+
         <Route path="/admin" element={
           <ProtectedRoute admin={true}>
-            <AdminDashboard />
-           
-            
+            <AdminDashboard />           
           </ProtectedRoute>
         }/>
         <Route path="/login" element={<Login />} />

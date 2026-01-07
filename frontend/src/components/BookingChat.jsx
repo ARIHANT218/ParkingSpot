@@ -1,7 +1,6 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
-import axios from '../api/axios'; // use your axios instance (baseURL + interceptors)
+import axios from '../api/axios'; 
 
 const SOCKET_URL = 'http://localhost:5000';
 
@@ -20,7 +19,7 @@ export default function BookingChat({ bookingId, token }) {
     const fetchHistory = async () => {
       if (!bookingId) return;
       try {
-        const res = await axios.get(`/api/chats/${bookingId}`, {
+        const res = await axios.get(`/chats/${bookingId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         if (mounted) setMessages(Array.isArray(res.data) ? res.data : []);
@@ -32,7 +31,7 @@ export default function BookingChat({ bookingId, token }) {
     fetchHistory();
     return () => { mounted = false; };
   }, [bookingId, token]);
-  // in BookingChat useEffect after fetchHistory or on connect
+ 
     useEffect(() => {
       if (!bookingId || !token) return;
       axios.patch(`/api/chats/${bookingId}/read`, {}, { headers: { Authorization: `Bearer ${token}` }})
@@ -40,7 +39,7 @@ export default function BookingChat({ bookingId, token }) {
     }, [bookingId, token]);
 
 
-  // Setup SocketIO connection (recreate when bookingId or token changes)
+
   useEffect(() => {
     if (!bookingId || !token) {
       console.log('BookingChat: Missing bookingId or token', { bookingId, token: !!token });
@@ -49,7 +48,7 @@ export default function BookingChat({ bookingId, token }) {
 
     console.log('BookingChat: Setting up socket connection', { bookingId });
 
-    // cleanup any previous socket
+    
     if (socketRef.current) {
       socketRef.current.off();
       socketRef.current.disconnect();
@@ -62,11 +61,11 @@ export default function BookingChat({ bookingId, token }) {
     });
     socketRef.current = socket;
 
-    // connection lifecycle
+   
     socket.on('connect', () => {
       console.log('BookingChat: Socket connected');
       setConnected(true);
-      // try to join the booking room
+    
       console.log('BookingChat: Joining room for booking', bookingId);
       socket.emit('joinRoom', { bookingId });
     });
@@ -76,7 +75,7 @@ export default function BookingChat({ bookingId, token }) {
       console.warn('Socket disconnected:', reason);
     });
 
-    // custom server-side errors (we used joinError/sendError in examples)
+   
     socket.on('joinError', (payload) => {
       console.warn('Join room error:', payload?.message || payload);
     });
@@ -85,24 +84,23 @@ export default function BookingChat({ bookingId, token }) {
       console.warn('Send message error:', payload?.message || payload);
     });
 
-    // normal new message event
     socket.on('newMessage', (msg) => {
       console.log('BookingChat: Received new message', msg);
-      // ensure message shape and avoid duplicates (optional)
+    
       setMessages(prev => {
-        // simple duplicate avoidance by _id
+        
         if (!msg || !msg._id) return [...prev, msg];
         if (prev.some(m => String(m._id) === String(msg._id))) return prev;
         return [...prev, msg];
       });
     });
 
-    // generic error
+   
     socket.on('error', (err) => {
       console.error('Socket error:', err);
     });
 
-    // cleanup on unmount or deps change
+   
     return () => {
       try {
         socket.off('connect');
@@ -111,14 +109,14 @@ export default function BookingChat({ bookingId, token }) {
         socket.off('sendError');
         socket.off('newMessage');
         socket.off('error');
-      } catch (error) { /* ignore */ }
+      } catch (error) 
       socket.disconnect();
       socketRef.current = null;
       setConnected(false);
     };
   }, [bookingId, token]);
 
-  // auto scroll
+ 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -128,11 +126,11 @@ export default function BookingChat({ bookingId, token }) {
     const socket = socketRef.current;
     if (!socket || !connected) {
       console.warn('Socket not connected. Falling back to REST POST.');
-      // fallback: send via REST POST
+     
       axios.post(`/api/chats/${bookingId}`, { message: text }, {
         headers: { Authorization: `Bearer ${token}` }
       }).then(res => {
-        // server may also broadcast; add locally to keep UI responsive
+       
         if (res.data) setMessages(prev => [...prev, res.data]);
       }).catch(err => {
         console.error('Failed to send message via REST:', err?.response?.data || err.message || err);
@@ -142,8 +140,7 @@ export default function BookingChat({ bookingId, token }) {
     }
 
     socket.emit('sendMessage', { bookingId, text }, (ack) => {
-      // optional ack callback from server
-      // if server returns ack.msg we could push it, otherwise assume server emits newMessage
+     
       if (ack && ack.error) {
         console.warn('Server ack error:', ack.error);
       }
@@ -191,7 +188,7 @@ export default function BookingChat({ bookingId, token }) {
           onChange={e => setText(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') sendMessage(); }}
           placeholder={connected ? "Type a message..." : "Connecting..."}
-          disabled={!connected && !token} // if no token and socket can't connect, disable
+          disabled={!connected && !token} 
         />
         <button
           onClick={sendMessage}

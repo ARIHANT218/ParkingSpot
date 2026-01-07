@@ -1,4 +1,3 @@
-// controllers/adminController.js
 const ParkingLot = require('../models/ParkingLot');
 const Booking = require('../models/Booking');
 const User = require('../models/user');
@@ -22,7 +21,7 @@ exports.createParkingLot = async (req, res) => {
       return res.status(400).json({ message: 'name, location, city, pricePerHour and capacity are required' });
     }
 
-    // Set the current admin as the owner
+  
     const ownerId = req.user._id || req.user.id;
 
     const lot = await ParkingLot.create({
@@ -33,7 +32,7 @@ exports.createParkingLot = async (req, res) => {
       longitude: longitude ? Number(longitude) : undefined,
       pricePerHour: Number(pricePerHour),
       capacity: Number(capacity),
-      // if availableSlots not provided, set it equal to capacity
+      
       availableSlots: typeof availableSlots !== 'undefined' ? Number(availableSlots) : Number(capacity),
       amenities: Array.isArray(amenities) ? amenities : (amenities ? String(amenities).split(',').map(a => a.trim()) : []),
       owner: ownerId
@@ -54,14 +53,14 @@ exports.updateParkingLot = async (req, res) => {
     const parkingLot = await ParkingLot.findById(req.params.id);
     if (!parkingLot) return res.status(404).json({ message: 'Parking lot not found' });
 
-    // Check ownership - only the owner can update
+   
     const ownerId = req.user._id || req.user.id;
     if (parkingLot.owner.toString() !== ownerId.toString()) {
       return res.status(403).json({ message: 'You can only update your own parking lots' });
     }
 
     const updates = { ...req.body };
-    // Remove owner from updates to prevent ownership change
+   
     delete updates.owner;
     
     if (updates.pricePerHour) updates.pricePerHour = Number(updates.pricePerHour);
@@ -80,19 +79,19 @@ exports.updateParkingLot = async (req, res) => {
   }
 };
 
-// Delete Parking Lot (and optionally related bookings)
+// Delete Parking Lot 
 exports.deleteParkingLot = async (req, res) => {
   try {
     const parkingLot = await ParkingLot.findById(req.params.id);
     if (!parkingLot) return res.status(404).json({ message: 'Parking lot not found' });
 
-    // Check ownership - only the owner can delete
+   
     const ownerId = req.user._id || req.user.id;
     if (parkingLot.owner.toString() !== ownerId.toString()) {
       return res.status(403).json({ message: 'You can only delete your own parking lots' });
     }
 
-    // Delete bookings associated with this parking lot
+  
     await Booking.deleteMany({ parkingLot: parkingLot._id });
 
     await ParkingLot.findByIdAndDelete(req.params.id);
@@ -104,16 +103,16 @@ exports.deleteParkingLot = async (req, res) => {
   }
 };
 
-// View all bookings - only returns bookings for parking lots owned by the current admin
+
 exports.getAllBookings = async (req, res) => {
   try {
     const ownerId = req.user._id || req.user.id;
     
-    // First, get all parking lots owned by this admin
+   
     const ownedParkingLots = await ParkingLot.find({ owner: ownerId }).select('_id');
     const parkingLotIds = ownedParkingLots.map(lot => lot._id);
     
-    // Then, get bookings for those parking lots only
+   
     const bookings = await Booking.find({ parkingLot: { $in: parkingLotIds } })
       .populate('user', 'name email')
       .populate('parkingLot', 'name location city pricePerHour capacity availableSlots')
@@ -146,7 +145,7 @@ exports.deleteBooking = async (req, res) => {
     const booking = await Booking.findById(req.params.id).populate('parkingLot');
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
-    // Check if the parking lot belongs to the current admin
+   
     const ownerId = req.user._id || req.user.id;
     const parkingLot = await ParkingLot.findById(booking.parkingLot._id || booking.parkingLot);
     if (!parkingLot) return res.status(404).json({ message: 'Parking lot not found' });
@@ -155,9 +154,9 @@ exports.deleteBooking = async (req, res) => {
       return res.status(403).json({ message: 'You can only delete bookings for your own parking lots' });
     }
 
-    // Restore available slot if parking lot exists
+   
     parkingLot.availableSlots = (parkingLot.availableSlots || 0) + 1;
-    // ensure availableSlots doesn't exceed capacity
+  
     if (parkingLot.capacity && parkingLot.availableSlots > parkingLot.capacity) {
       parkingLot.availableSlots = parkingLot.capacity;
     }
@@ -178,7 +177,7 @@ exports.confirmBooking = async (req, res) => {
     const booking = await Booking.findById(req.params.id).populate('parkingLot');
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
-    // Check if the parking lot belongs to the current admin
+  
     const ownerId = req.user._id || req.user.id;
     const parkingLot = await ParkingLot.findById(booking.parkingLot._id || booking.parkingLot);
     if (!parkingLot) return res.status(404).json({ message: 'Parking lot not found' });
@@ -229,7 +228,7 @@ exports.createBooking = async (req, res) => {
       status: 'pending'
     });
 
-    // Decrease available slots
+   
     parkingLotDoc.availableSlots -= 1;
     await parkingLotDoc.save();
 
@@ -252,7 +251,7 @@ exports.getBookingById = async (req, res) => {
 
     if (!booking) return res.status(404).json({ message: 'Booking not found' });
 
-    // Check if user owns the booking or is admin
+   
     const userId = req.user._id || req.user.id;
     if (booking.user._id.toString() !== userId.toString() && !req.user.isAdmin) {
       return res.status(403).json({ message: 'Not authorized to view this booking' });
@@ -270,7 +269,7 @@ exports.getBookingsByUser = async (req, res) => {
     const { userId } = req.params;
     const currentUserId = req.user._id || req.user.id;
 
-    // Users can only view their own bookings unless they're admin
+   
     if (userId !== currentUserId.toString() && !req.user.isAdmin) {
       return res.status(403).json({ message: 'Not authorized to view these bookings' });
     }

@@ -40,19 +40,12 @@ export default function ParkingDetails() {
       setParking(res.data);
     } catch (err) {
       console.error('Error fetching parking by ID', err);
-      try {
-        const res2 = await axios.get('/parking');
-        const lot = Array.isArray(res2.data) ? res2.data.find(p => String(p._id) === String(id)) : null;
-        setParking(lot);
-      } catch (err2) {
-        console.error('Error fetching parking', err2);
-      }
+      
     }
   };
 
   useEffect(() => {
-    fetchParking();
-    
+    fetchParking();   
     setBooking(null);
     setMessage('');
   }, [id]);
@@ -68,6 +61,7 @@ export default function ParkingDetails() {
         const existingBooking = res.data.find(b => 
           String(b.parkingLot._id || b.parkingLot) === String(id)
         );
+
         console.log('Fetched bookings:', res.data);
         console.log('Looking for parking lot ID:', id);
         console.log('Found existing booking:', existingBooking);
@@ -207,7 +201,7 @@ export default function ParkingDetails() {
         </div>
       )}
 
-      {/* Chat: render only if booking exists, status confirmed, and current user is participant (owner or admin) */}
+      
       <div className="mt-6">
         {booking ? (
           (() => {
