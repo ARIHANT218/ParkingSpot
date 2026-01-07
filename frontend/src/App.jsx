@@ -8,8 +8,7 @@ import ParkingDetails from './pages/ParkingDetails';
 import UserBookings from './pages/UserBookings';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
-import MapLoader from './components/MapLoader';
-import MapView from './pages/MapView';
+
 
 
 
@@ -24,11 +23,7 @@ function App() {
           </ProtectedRoute>
         }/>
                 
-        <Route path="/map" element={
-          <MapLoader>
-            <MapView />
-          </MapLoader>
-        } />
+       
 
         <Route path="/parking/:id" element={
           <ProtectedRoute>
